@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>CMS管理画面</title>
+<style>
+  :root {
+    --blue: #1A6BB0;
+    --blue-dark: #145489;
+    --blue-light: #E8F1F9;
+    --blue-line: #C9DDEE;
+    --text: #1F2A37;
+    --muted: #64748B;
+    --bg: #F4F8FC;
+    --white: #FFFFFF;
+    --danger: #C0392B;
+    --danger-bg: #FDECEA;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+  button, select, textarea, input { font: inherit; }
+  [hidden] { display: none !important; }
+
+  /* ---------- ログイン ---------- */
+  #login {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .login-box {
+    width: 100%;
+    max-width: 380px;
+    background: var(--white);
+    border: 1px solid var(--blue-line);
+    border-top: 5px solid var(--blue);
+    border-radius: 8px;
+    padding: 28px 24px 24px;
+  }
+  .login-box h1 { margin: 0 0 4px; font-size: 1.3rem; color: var(--blue); }
+  .login-box p { margin: 0 0 20px; color: var(--muted); font-size: .9rem; }
+  label.field { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 6px; }
+  input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--blue-line);
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--text);
+    font-size: 16px; /* iOSの自動ズーム防止 */
+  }
+  .login-error { color: var(--danger); font-size: .88rem; min-height: 1.4em; margin: 8px 0 0; }
+
+  /* ---------- ボタン ---------- */
+  .btn {
+    appearance: none;
+    border: 1px solid var(--blue);
+    background: var(--blue);
+    color: var(--white);
+    padding: 10px 18px;
+    min-height: 44px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  .btn:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn.ghost { background: var(--white); color: var(--blue); }
+  .btn.ghost:hover { background: var(--blue-light); }
+  .btn.block { width: 100%; margin-top: 14px; }
+  .btn.small { padding: 6px 16px; min-height: 40px; }
+  :focus-visible { outline: 3px solid #7FB2DE; outline-offset: 2px; }
+
+  /* ---------- ヘッダー ---------- */
+  header.top {
+    background: var(--blue);
+    color: var(--white);
+  }
+  .top-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .top h1 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+  .top .btn.ghost {
+    background: transparent;
+    color: var(--white);
+    border-color: rgba(255,255,255,.7);
+    min-height: 38px;
+    padding: 4px 14px;
+    font-size: .88rem;
+  }
+  .top .btn.ghost:hover { background: rgba(255,255,255,.15); }
+
+  /* ---------- メイン ---------- */
+  main { max-width: 960px; margin: 0 auto; padding: 20px 16px 96px; }
+  .picker {
+    background: var(--white);
+    border: 1px solid var(--blue-line);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .picker .grow { flex: 1 1 220px; }
+  select {
+    width: 100%;
+    padding: 12px 40px 12px 14px;
+    min-height: 46px;
+    border: 1px solid var(--blue);
+    border-radius: 6px;
+    background: var(--white) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'><path d='M1 1l6 6 6-6' fill='none' stroke='%231A6BB0' stroke-width='2'/></svg>") no-repeat right 14px center;
+    -webkit-appearance: none;
+    appearance: none;
+    color: var(--text);
+    font-size: 16px;
+  }
+
+  #status { margin: 20px 4px 0; color: var(--muted); font-size: .92rem; }
+  #status.error {
+    color: var(--danger);
+    background: var(--danger-bg);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-left: 0; margin-right: 0;
+  }
+
+  /* ---------- 一覧 ---------- */
+  #list { margin-top: 16px; display: grid; gap: 10px; }
+  .row {
+    background: var(--white);
+    border: 1px solid var(--blue-line);
+    border-left: 4px solid var(--blue);
+    border-radius: 6px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 6px 16px;
+    align-items: start;
+  }
+  .row.editing { border-left-color: var(--blue-dark); box-shadow: 0 0 0 2px var(--blue-light); }
+  .row .label { font-weight: 700; color: var(--blue-dark); word-break: break-word; }
+  .row .value { white-space: pre-wrap; word-break: break-word; min-width: 0; }
+  .row .value.empty { color: var(--muted); font-style: italic; }
+  .row .actions { display: flex; gap: 8px; }
+  .row textarea {
+    width: 100%;
+    min-height: 88px;
+    padding: 10px 12px;
+    border: 1px solid var(--blue);
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.6;
+    resize: vertical;
+  }
+  .btn-cancel { background: var(--white); color: var(--blue); }
+
+  /* ---------- トースト ---------- */
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 20px);
+    background: var(--blue-dark);
+    color: var(--white);
+    padding: 12px 22px;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 6px 20px rgba(20, 84, 137, .35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s, transform .2s;
+    z-index: 10;
+    max-width: calc(100% - 32px);
+    text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #toast.error { background: var(--danger); }
+
+  /* ---------- スマホ ---------- */
+  @media (max-width: 640px) {
+    .row { grid-template-columns: 1fr; gap: 6px; padding: 14px; }
+    .row .actions { justify-content: flex-end; }
+    .row .actions .btn { flex: 1; }
+    .row:not(.editing) .actions .btn { flex: 0 0 auto; min-width: 96px; }
+    .top h1 { font-size: 1rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ログイン画面 -->
+<section id="login">
+  <form class="login-box" id="loginForm" autocomplete="off">
+    <h1>CMS管理画面</h1>
+    <p>パスワードを入力してください。</p>
+    <label class="field" for="pw">パスワード</label>
+    <input type="password" id="pw" autocomplete="current-password" required>
+    <p class="login-error" id="loginError" role="alert"></p>
+    <button type="submit" class="btn block">ログイン</button>
+  </form>
+</section>
+
+<!-- 管理画面 -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="top-inner">
+      <h1>CMS管理画面</h1>
+      <button type="button" class="btn ghost" id="logoutBtn">ログアウト</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="picker">
+      <div class="grow">
+        <label class="field" for="sectionSelect">セクション</label>
+        <select id="sectionSelect"></select>
+      </div>
+      <button type="button" class="btn ghost" id="reloadBtn">再読み込み</button>
+    </div>
+
+    <p id="status">セクションを選択してください。</p>
+    <div id="list"></div>
+  </main>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ===== 設定 ===== */
+  var SUPABASE_URL = 'https://hbmdcaajeapvpanexswd.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhibWRjYWFqZWFwdnBhbmV4c3dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5MzEzMTcsImV4cCI6MjEwNTUwNzMxN30.YDtLTQ-Wd-mAvnh_ek1FgyR5vP5h_nZvIVBZdqL7uLQ';
+  var TABLE = 'site_content';
+  var PASSWORD = 'setsubi2026';
+
+  // テーブルの列名（実際の列名が違う場合はここを変更）
+  var COL_SECTION = 'section';
+  var COL_LABEL = 'label';
+  var COL_VALUE = 'value';
+  var COL_ID = 'id';
+
+  /* ===== 要素 ===== */
+  var $ = function (id) { return document.getElementById(id); };
+  var loginEl = $('login'), appEl = $('app');
+  var pwEl = $('pw'), loginError = $('loginError');
+  var selectEl = $('sectionSelect'), listEl = $('list'), statusEl = $('status'), toastEl = $('toast');
+  var loadSeq = 0, toastTimer = null;
+
+  /* ===== Supabase REST ===== */
+  function headers(extra) {
+    var h = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+    for (var k in (extra || {})) h[k] = extra[k];
+    return h;
+  }
+  function endpoint(query) {
+    return SUPABASE_URL + '/rest/v1/' + TABLE + '?' + query;
+  }
+  function errorText(res, body) {
+    var msg = (body && (body.message || body.error_description || body.hint)) || ('HTTP ' + res.status);
+    return msg;
+  }
+
+  async function fetchSection(section) {
+    var base = 'select=*&' + COL_SECTION + '=eq.' + encodeURIComponent(section);
+    // 通常はid順。idの列が無い場合は並び順なしで再取得する
+    var res = await fetch(endpoint(base + '&order=' + COL_ID + '.asc'), { headers: headers() });
+    if (res.status === 400) {
+      res = await fetch(endpoint(base), { headers: headers() });
+    }
+    var body = await res.json().catch(function () { return null; });
+    if (!res.ok) throw new Error(errorText(res, body));
+    return body || [];
+  }
+
+  async function updateRow(row, newValue) {
+    var filter;
+    if (row[COL_ID] !== undefined && row[COL_ID] !== null) {
+      filter = COL_ID + '=eq.' + encodeURIComponent(row[COL_ID]);
+    } else {
+      filter = COL_SECTION + '=eq.' + encodeURIComponent(row[COL_SECTION]) +
+               '&' + COL_LABEL + '=eq.' + encodeURIComponent(row[COL_LABEL]);
+    }
+    var payload = {};
+    payload[COL_VALUE] = newValue;
+    var res = await fetch(endpoint(filter), {
+      method: 'PATCH',
+      headers: headers({ 'Content-Type': 'application/json', 'Prefer': 'return=representation' }),
+      body: JSON.stringify(payload)
+    });
+    var body = await res.json().catch(function () { return null; });
+    if (!res.ok) throw new Error(errorText(res, body));
+    // RLSで更新が許可されていない場合、エラーにならず0件更新になる
+    if (!body || body.length === 0) {
+      throw new Error('更新できませんでした。SupabaseのRLS（UPDATEポリシー）を確認してください。');
+    }
+    return body[0];
+  }
+
+  /* ===== 表示 ===== */
+  function showToast(text, isError) {
+    toastEl.textContent = text;
+    toastEl.className = (isError ? 'error ' : '') + 'show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.className = isError ? 'error' : ''; }, isError ? 4500 : 2500);
+  }
+  function setStatus(text, isError) {
+    statusEl.textContent = text;
+    statusEl.className = isError ? 'error' : '';
+    statusEl.hidden = !text;
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function valueText(v) {
+    if (v === null || v === undefined) return '';
+    return typeof v === 'string' ? v : JSON.stringify(v);
+  }
+
+  function renderRow(row) {
+    var wrap = el('div', 'row');
+    var labelEl = el('div', 'label', valueText(row[COL_LABEL]));
+    var valueEl = el('div', 'value');
+    var actions = el('div', 'actions');
+    var editBtn = el('button', 'btn small', '編集');
+    editBtn.type = 'button';
+    actions.appendChild(editBtn);
+
+    function showValue() {
+      var t = valueText(row[COL_VALUE]);
+      valueEl.textContent = t || '（未入力）';
+      valueEl.className = 'value' + (t ? '' : ' empty');
+    }
+    showValue();
+
+    editBtn.addEventListener('click', function () {
+      wrap.classList.add('editing');
+      var ta = el('textarea');
+      ta.value = valueText(row[COL_VALUE]);
+      ta.setAttribute('aria-label', valueText(row[COL_LABEL]) + 'の値');
+      valueEl.className = 'value';
+      valueEl.textContent = '';
+      valueEl.appendChild(ta);
+
+      var saveBtn = el('button', 'btn small', '保存');
+      var cancelBtn = el('button', 'btn small btn-cancel', 'キャンセル');
+      saveBtn.type = 'button';
+      cancelBtn.type = 'button';
+      actions.textContent = '';
+      actions.appendChild(saveBtn);
+      actions.appendChild(cancelBtn);
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+
+      function leaveEdit() {
+        wrap.classList.remove('editing');
+        showValue();
+        actions.textContent = '';
+        actions.appendChild(editBtn);
+      }
+
+      cancelBtn.addEventListener('click', leaveEdit);
+
+      saveBtn.addEventListener('click', async function () {
+        saveBtn.disabled = true;
+        cancelBtn.disabled = true;
+        saveBtn.textContent = '保存中…';
+        try {
+          var updated = await updateRow(row, ta.value);
+          row[COL_VALUE] = updated[COL_VALUE];
+          leaveEdit();
+          showToast('☑保存しました');
+        } catch (err) {
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          saveBtn.textContent = '保存';
+          showToast('保存に失敗しました：' + err.message, true);
+        }
+      });
+    });
+
+    wrap.appendChild(labelEl);
+    wrap.appendChild(valueEl);
+    wrap.appendChild(actions);
+    return wrap;
+  }
+
+  async function loadSection() {
+    var section = selectEl.value;
+    listEl.textContent = '';
+    if (!section) {
+      setStatus('セクションを選択してください。');
+      return;
+    }
+    var seq = ++loadSeq;
+    setStatus('読み込み中…');
+    try {
+      var rows = await fetchSection(section);
+      if (seq !== loadSeq) return; // 古いリクエストは無視
+      if (rows.length === 0) {
+        setStatus('このセクションにはデータがありません。');
+        return;
+      }
+      setStatus('');
+      rows.forEach(function (r) { listEl.appendChild(renderRow(r)); });
+    } catch (err) {
+      if (seq !== loadSeq) return;
+      setStatus('読み込みに失敗しました：' + err.message, true);
+    }
+  }
+
+  /* ===== 初期化 ===== */
+  function buildSelect() {
+    selectEl.textContent = '';
+    var ph = el('option', null, 'セクションを選択');
+    ph.value = '';
+    selectEl.appendChild(ph);
+    for (var i = 1; i <= 12; i++) {
+      var v = 'section-' + (i < 10 ? '0' + i : i);
+      var o = el('option', null, v);
+      o.value = v;
+      selectEl.appendChild(o);
+    }
+  }
+
+  function enterApp() {
+    loginEl.hidden = true;
+    appEl.hidden = false;
+    buildSelect();
+    setStatus('セクションを選択してください。');
+  }
+  function leaveApp() {
+    try { sessionStorage.removeItem('cms_auth'); } catch (e) {}
+    appEl.hidden = true;
+    loginEl.hidden = false;
+    pwEl.value = '';
+    listEl.textContent = '';
+    pwEl.focus();
+  }
+
+  $('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (pwEl.value === PASSWORD) {
+      loginError.textContent = '';
+      try { sessionStorage.setItem('cms_auth', '1'); } catch (err) {}
+      enterApp();
+    } else {
+      loginError.textContent = 'パスワードが違います。';
+      pwEl.select();
+    }
+  });
+  $('logoutBtn').addEventListener('click', leaveApp);
+  $('reloadBtn').addEventListener('click', loadSection);
+  selectEl.addEventListener('change', loadSection);
+
+  var authed = false;
+  try { authed = sessionStorage.getItem('cms_auth') === '1'; } catch (e) {}
+  if (authed) enterApp(); else pwEl.focus();
+})();
+</script>
+</body>
+</html>
