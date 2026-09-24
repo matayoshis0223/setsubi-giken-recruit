@@ -198,6 +198,13 @@
     color: var(--blue-dark);
   }
   .row .label .key { display: block; font-weight: 400; font-size: .75rem; color: var(--muted); word-break: break-all; }
+  .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; white-space: normal; }
+  .set-card { border: 1px solid var(--blue-line); border-radius: 6px; padding: 8px 10px; background: var(--white); min-width: 0; }
+  .set-no { display: block; font-size: .75rem; font-weight: 700; color: var(--blue-dark); margin-bottom: 4px; }
+  .set-text { display: block; white-space: pre-wrap; word-break: break-word; font-size: .92rem; line-height: 1.6; }
+  .set-text.empty { color: var(--muted); font-style: italic; }
+  .editing-grid { margin-top: 8px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .row .editing-grid textarea { min-height: 96px; padding: 8px 10px; }
   .line-help { margin: 6px 0 0; font-size: .8rem; color: var(--muted); white-space: normal; }
   .line-help.over { color: #8A5A00; background: var(--note-bg); border-radius: 4px; padding: 4px 8px; }
   .tag.warn { background: var(--note-bg); color: #8A5A00; }
@@ -459,6 +466,10 @@
   var PAGE_URL = './index.html';
   // true にすると、ページ順ではなくドラッグでの手動並べ替えに戻る
   var MANUAL_ORDER = false;
+  // まとめて編集するカード（キーの末尾の番号を除いた部分を指定。例：section02.card01〜05）
+  var CARD_SETS = [
+    { stem: 'section02.card', name: 'カード' }
+  ];
 
   // index.html の順番（data-content-key を上から順に並べたもの）。
   // PAGE_URL から最新の index.html を読めなかった場合に使います。
@@ -681,12 +692,16 @@
     var g = {
       __group: members,
       __list: !!meta.list,
+      __set: !!meta.set,
+      __setName: meta.name,
       __firstKey: first[COL_KEY],
       __lastKey: last[COL_KEY]
     };
     g[COL_SECTION] = first[COL_SECTION];
     g[COL_LABEL] = fl === ll ? fl : fl + ' 〜 ' + ll;
-    g[COL_VALUE] = joinLines(members);
+    g[COL_VALUE] = meta.set
+      ? members.map(function (m) { return brToNewline(valueText(m[COL_VALUE])); }).join('\n\n')
+      : joinLines(members);
     if (COL_STYLE in first) g[COL_STYLE] = first[COL_STYLE];
     return g;
   }
@@ -703,7 +718,7 @@
         }).filter(Boolean);
         var ok = members.length > 1 && members.every(function (m) {
           var v = valueText(m[COL_VALUE]);
-          return !used.has(m) && !isImageValue(v) && !/\n|<br\s*\/?>/i.test(v);
+          return !used.has(m) && !isImageValue(v) && (meta.set || !/\n|<br\s*\/?>/i.test(v));
         });
         if (ok) {
           members.forEach(function (m) { used.add(m); });
@@ -715,6 +730,31 @@
       out.push(r);
     });
     return out;
+  }
+
+  function brToNewline(v) { return String(v).replace(/<br\s*\/?>/gi, '\n'); }
+  // 元の値が <br> で改行していた場合は同じ書き方で保存する
+  function restoreBreaks(original, edited) {
+    var text = String(edited).replace(/\r\n?/g, '\n');
+    if (/<br\s*\/?>/i.test(original) && !/\n/.test(original)) return text.replace(/\n/g, '<br>');
+    return text;
+  }
+
+  // カードのまとまりを保存する（変更されたカードだけ更新）
+  async function saveSet(g, texts) {
+    var members = g.__group;
+    var jobs = [];
+    members.forEach(function (m, i) {
+      var orig = valueText(m[COL_VALUE]);
+      if (brToNewline(orig) === texts[i].replace(/\r\n?/g, '\n')) return;
+      var p = {}; p[COL_VALUE] = restoreBreaks(orig, texts[i]);
+      jobs.push(patchRow(m, p).then(function (u) { m[COL_VALUE] = u[COL_VALUE]; }));
+    });
+    var results = await Promise.allSettled(jobs);
+    g[COL_VALUE] = members.map(function (m) { return brToNewline(valueText(m[COL_VALUE])); }).join('\n\n');
+    var failed = results.filter(function (r) { return r.status === 'rejected'; });
+    if (failed.length) throw failed[0].reason;
+    return jobs.length;
   }
 
   async function patchGroup(g, payload) {
@@ -768,6 +808,15 @@
     var groupOf = Object.create(null);
     (groups || []).forEach(function (g) {
       g.keys.forEach(function (k) { groupOf[k] = g; });
+    });
+    // カードのまとまり（ページ上の順番どおり）
+    CARD_SETS.forEach(function (c) {
+      var re = new RegExp('^' + c.stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\d+$');
+      var setKeys = Object.keys(index).filter(function (k) { return re.test(k); })
+        .sort(function (a, b) { return index[a] - index[b]; });
+      if (setKeys.length < 2) return;
+      var g = { keys: setKeys, set: true, name: c.name || '項目' };
+      setKeys.forEach(function (k) { groupOf[k] = g; });
     });
     return { index: index, titles: titles || {}, groupOf: groupOf, live: live };
   }
@@ -1081,7 +1130,8 @@
 
     function showTags() {
       tagsEl.textContent = '';
-      if (row.__group) tagsEl.appendChild(el('span', 'tag', row.__list ? row.__group.length + '項目の箇条書き' : row.__group.length + '行の文章'));
+      if (row.__set) tagsEl.appendChild(el('span', 'tag', row.__group.length + '枚の' + row.__setName));
+      else if (row.__group) tagsEl.appendChild(el('span', 'tag', row.__list ? row.__group.length + '項目の箇条書き' : row.__group.length + '行の文章'));
       if (isImageRow(row)) tagsEl.appendChild(el('span', 'tag', '画像'));
       if (COL_KEY in row && keyPos(row[COL_KEY]) === null) tagsEl.appendChild(el('span', 'tag warn', 'ページ未使用'));
       if (features.style && !isDefaultStyle(getStyle(row))) tagsEl.appendChild(el('span', 'tag', '位置調整あり'));
@@ -1089,6 +1139,22 @@
     }
 
     function showValue() {
+      if (row.__set) {
+        valueEl.textContent = '';
+        valueEl.className = 'value';
+        var grid = el('div', 'set-grid');
+        row.__group.forEach(function (m, i) {
+          var card = el('div', 'set-card');
+          card.appendChild(el('span', 'set-no', row.__setName + (i + 1)));
+          var t = brToNewline(valueText(m[COL_VALUE]));
+          var body = el('span', 'set-text' + (t ? '' : ' empty'), t || '（未入力）');
+          card.appendChild(body);
+          grid.appendChild(card);
+        });
+        valueEl.appendChild(grid);
+        showTags();
+        return;
+      }
       var v = valueText(row[COL_VALUE]);
       var img = isImageRow(row);
       valueEl.textContent = '';
@@ -1113,8 +1179,63 @@
     showActions();
 
     /* ----- 内容の編集（テキスト / 画像） ----- */
+    // カードのまとまりを一括編集
+    function startSetEdit() {
+      wrap.classList.add('editing');
+      valueEl.className = 'value';
+      valueEl.textContent = '';
+      valueEl.appendChild(el('p', 'line-help', '各' + row.__setName + 'の文字をまとめて編集できます。改行した位置が、' + row.__setName + '内の改行になります。'));
+      var grid = el('div', 'set-grid editing-grid');
+      var areas = row.__group.map(function (m, i) {
+        var box = el('div', 'set-card');
+        var id = 'set-' + Math.random().toString(36).slice(2, 8);
+        var lb = el('label', 'set-no', row.__setName + (i + 1));
+        lb.htmlFor = id;
+        var ta = el('textarea');
+        ta.id = id;
+        ta.rows = 4;
+        ta.value = brToNewline(valueText(m[COL_VALUE]));
+        box.appendChild(lb);
+        box.appendChild(ta);
+        grid.appendChild(box);
+        return ta;
+      });
+      valueEl.appendChild(grid);
+
+      var saveBtn = button('まとめて保存');
+      var cancelBtn = button('キャンセル', 'btn-cancel');
+      actions.textContent = '';
+      actions.appendChild(saveBtn);
+      actions.appendChild(cancelBtn);
+      areas[0].focus();
+
+      function leaveEdit() {
+        wrap.classList.remove('editing');
+        showValue();
+        showActions();
+        editBtn.focus();
+      }
+      cancelBtn.addEventListener('click', leaveEdit);
+      saveBtn.addEventListener('click', async function () {
+        saveBtn.disabled = true;
+        cancelBtn.disabled = true;
+        saveBtn.textContent = '保存中…';
+        try {
+          var n = await saveSet(row, areas.map(function (a) { return a.value; }));
+          leaveEdit();
+          showToast(n ? '☑' + n + '件の' + row.__setName + 'を保存しました' : '変更はありませんでした');
+        } catch (err) {
+          saveBtn.disabled = false;
+          cancelBtn.disabled = false;
+          saveBtn.textContent = 'まとめて保存';
+          showToast('保存に失敗しました：' + err.message, true);
+        }
+      });
+    }
+
     editBtn.addEventListener('click', function () {
       closePanel();
+      if (row.__set) { startSetEdit(); return; }
       wrap.classList.add('editing');
       var current = valueText(row[COL_VALUE]);
       var mode = isImageRow(row) ? 'image' : 'text';
