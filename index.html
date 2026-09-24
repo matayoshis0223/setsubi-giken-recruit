@@ -1530,19 +1530,48 @@
       });
     }
 
+    // CMSの「文字・位置」で保存した見た目（style列）を要素に反映する。
+    // ルールはCMSのプレビュー（cms.html の applyStyle）と同じです。
+    function parseStyle(s) {
+      if (typeof s === 'string') { try { s = JSON.parse(s); } catch (e) { return null; } }
+      return (s && typeof s === 'object') ? s : null;
+    }
+    function applyStyle(el, s) {
+      // 文字
+      if (s.fontFamily) el.style.fontFamily = String(s.fontFamily).replace(/[;{}<>\\]/g, '');
+      var size = Number(s.fontSize);
+      // 大きな文字がスマホで画面からはみ出さないよう、画面幅の9%を上限にする
+      if (size > 0) el.style.fontSize = 'min(' + Math.round(size) + 'px, 9vw)';
+      if (/^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(s.color || '')) el.style.color = s.color;
+      // 位置
+      if (['left', 'center', 'right'].indexOf(s.align) !== -1) el.style.textAlign = s.align;
+      var x = Number(s.x) || 0, y = Number(s.y) || 0;
+      if (x || y) {
+        // インライン要素（spanなど）は transform が効かないため inline-block にする
+        if (getComputedStyle(el).display === 'inline') el.style.display = 'inline-block';
+        el.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+      }
+    }
+
+    function fetchRows(columns) {
+      return fetch(
+        SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?select=' + columns,
+        {
+          method: 'GET',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+    }
+
     async function loadSiteContent() {
       try {
-        var res = await fetch(
-          SUPABASE_URL + '/rest/v1/' + TABLE_NAME + '?select=content_key,value',
-          {
-            method: 'GET',
-            headers: {
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        var res = await fetchRows('content_key,value,style');
+        // style列がまだ無いテーブルでは400になるため、文字だけ読み込む
+        if (res.status === 400) res = await fetchRows('content_key,value');
 
         if (!res.ok) {
           throw new Error('Supabase取得エラー: ' + res.status + ' ' + res.statusText);
@@ -1552,10 +1581,13 @@
 
         // content_key => value の対応表を作る
         var map = {};
+        var styles = {};
         rows.forEach(function (row) {
           if (row && row.content_key != null && row.value != null) {
             map[row.content_key] = row.value;
           }
+          var st = row && row.content_key != null ? parseStyle(row.style) : null;
+          if (st) styles[row.content_key] = st;
         });
 
         // data-content-key を持つ要素を全部探して書き換える
@@ -1563,6 +1595,9 @@
           var key = el.getAttribute('data-content-key');
           if (Object.prototype.hasOwnProperty.call(map, key)) {
             setText(el, map[key]);
+          }
+          if (Object.prototype.hasOwnProperty.call(styles, key)) {
+            applyStyle(el, styles[key]);
           }
         });
       } catch (err) {
