@@ -337,6 +337,42 @@
   .range-line input[type="range"] { flex: 1; accent-color: var(--blue); }
   .range-line output { min-width: 3.6em; text-align: right; font-size: .88rem; color: var(--muted); }
   .pos-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pos-group { display: grid; gap: 12px; }
+  .pos-group + .pos-group { border-top: 1px solid var(--blue-line); padding-top: 14px; }
+  .pos-group-title { margin: 0; font-size: .92rem; font-weight: 700; color: var(--blue-dark); }
+  .pos-controls select { min-height: 42px; padding: 8px 36px 8px 12px; }
+  .pos-controls input[type="text"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--blue-line);
+    border-radius: 6px;
+    background: var(--white);
+    color: var(--text);
+    font-size: 16px;
+  }
+  .color-line { display: flex; align-items: center; gap: 8px; }
+  .color-line input[type="color"] {
+    flex: 0 0 44px;
+    width: 44px; height: 42px;
+    padding: 2px;
+    border: 1px solid var(--blue-line);
+    border-radius: 6px;
+    background: var(--white);
+    cursor: pointer;
+  }
+  .color-line input[type="text"] { flex: 1; min-width: 0; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .color-line.unset input[type="color"] { opacity: .35; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .swatch {
+    appearance: none;
+    width: 30px; height: 30px;
+    padding: 0;
+    border: 1px solid var(--blue-line);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--blue); }
+  .mini-btn { min-height: 34px !important; padding: 2px 10px !important; flex: 0 0 auto; }
   .pv-wrap { min-width: 0; }
   .pv-frame {
     position: relative;
@@ -350,6 +386,13 @@
       linear-gradient(var(--blue-light) 1px, transparent 1px),
       linear-gradient(90deg, var(--blue-light) 1px, transparent 1px);
     background-size: 20px 20px;
+  }
+  /* 白っぽい文字色のときは背景を暗くして見えるようにする */
+  .pv-frame.dark {
+    background-color: #3A4656;
+    background-image:
+      linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
   }
   .pv-target {
     cursor: move;
@@ -620,6 +663,19 @@
     "section12.form.badge", "section12.form.submit", "footer.message"
     ]
   };
+
+  // 文字の設定で選べるフォント（value がそのまま CSS の font-family として保存されます）
+  // 公開サイトでWebフォント（Google Fontsなど）を読み込んでいれば、ここに追加できます
+  var FONT_PRESETS = [
+    { label: 'ゴシック体', value: '\"Hiragino Sans\", \"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", YuGothic, Meiryo, \"Noto Sans JP\", sans-serif' },
+    { label: '明朝体', value: '\"Hiragino Mincho ProN\", \"Yu Mincho\", YuMincho, \"Noto Serif JP\", serif' },
+    { label: '丸ゴシック体', value: '\"Hiragino Maru Gothic ProN\", \"Zen Maru Gothic\", \"M PLUS Rounded 1c\", \"Kosugi Maru\", sans-serif' },
+    { label: '等幅', value: 'Osaka-Mono, \"MS Gothic\", \"Noto Sans Mono\", monospace' }
+  ];
+  // 文字色のよく使う色（サイトのブランドカラーに書き換えてください）
+  var COLOR_SWATCHES = ['#000000', '#333333', '#FFFFFF', '#1A6BB0', '#C0392B', '#E67E22'];
+  // 文字の大きさの範囲（px）
+  var FONT_SIZE_MIN = 10, FONT_SIZE_MAX = 80;
 
   // 画像の保存先（Supabase Storage の公開バケット名）
   var STORAGE_BUCKET = 'cms-images';
@@ -1042,7 +1098,34 @@
   }
 
   /* ===== 位置情報 ===== */
-  function defaultStyle() { return { align: '', x: 0, y: 0, width: null }; }
+  function defaultStyle() { return { align: '', x: 0, y: 0, width: null, fontFamily: '', fontSize: null, color: '' }; }
+
+  // #abc / #aabbcc を #AABBCC に揃える（不正な値は空）
+  function normalizeColor(c) {
+    c = String(c || '').trim();
+    var m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+    if (!m) return '';
+    var h = m[1];
+    if (h.length === 3) h = h.charAt(0) + h.charAt(0) + h.charAt(1) + h.charAt(1) + h.charAt(2) + h.charAt(2);
+    return '#' + h.toUpperCase();
+  }
+  // CSSとして危険な文字を取り除く
+  function cleanFontFamily(f) {
+    return String(f || '').replace(/[;{}<>\\]/g, '').trim().slice(0, 300);
+  }
+  function clampFontSize(n) {
+    n = Number(n);
+    if (!isFinite(n) || n <= 0) return null;
+    return Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, Math.round(n)));
+  }
+  // 明るい色か（プレビュー背景の切替用）
+  function isLightColor(c) {
+    c = normalizeColor(c);
+    if (!c) return false;
+    var r = parseInt(c.substr(1, 2), 16), g = parseInt(c.substr(3, 2), 16), b = parseInt(c.substr(5, 2), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.78;
+  }
+
   function getStyle(row) {
     var s = row[COL_STYLE];
     if (typeof s === 'string') { try { s = JSON.parse(s); } catch (e) { s = null; } }
@@ -1052,12 +1135,24 @@
       d.x = Number(s.x) || 0;
       d.y = Number(s.y) || 0;
       d.width = (s.width === null || s.width === undefined || s.width === '') ? null : Math.max(5, Math.min(100, Number(s.width) || 100));
+      d.fontFamily = cleanFontFamily(s.fontFamily);
+      d.fontSize = (s.fontSize === null || s.fontSize === undefined || s.fontSize === '') ? null : clampFontSize(s.fontSize);
+      d.color = normalizeColor(s.color);
     }
     return d;
   }
-  function isDefaultStyle(s) { return !s.align && !s.x && !s.y && s.width === null; }
+  function hasPosStyle(s) { return !!(s.align || s.x || s.y || s.width !== null); }
+  function hasFontStyle(s) { return !!(s.fontFamily || s.fontSize !== null || s.color); }
+  function isDefaultStyle(s) { return !hasPosStyle(s) && !hasFontStyle(s); }
   function styleForSave(row, s) {
-    var out = isDefaultStyle(s) ? null : { align: s.align || null, x: s.x, y: s.y, width: s.width };
+    var out = null;
+    if (!isDefaultStyle(s)) {
+      out = { align: s.align || null, x: s.x, y: s.y, width: s.width };
+      // 文字の設定は指定したものだけ保存する
+      if (s.fontFamily) out.fontFamily = s.fontFamily;
+      if (s.fontSize !== null) out.fontSize = s.fontSize;
+      if (s.color) out.color = s.color;
+    }
     // 列がtext型で文字列として保存されていた場合は文字列で返す
     if (out && typeof row[COL_STYLE] === 'string') return JSON.stringify(out);
     return out;
@@ -1072,6 +1167,9 @@
       target.style.marginRight = s.align === 'center' ? 'auto' : '';
     } else {
       target.style.textAlign = s.align || '';
+      target.style.fontFamily = s.fontFamily || '';
+      target.style.fontSize = s.fontSize !== null ? s.fontSize + 'px' : '';
+      target.style.color = s.color || '';
     }
   }
 
@@ -1163,7 +1261,10 @@
     function showActions() {
       actions.textContent = '';
       actions.appendChild(editBtn);
-      if (features.style) actions.appendChild(posBtn);
+      if (features.style) {
+        posBtn.textContent = isImageRow(row) ? '位置' : '文字・位置';
+        actions.appendChild(posBtn);
+      }
     }
 
     function showTags() {
@@ -1172,7 +1273,11 @@
       else if (row.__group) tagsEl.appendChild(el('span', 'tag', row.__list ? row.__group.length + '項目の箇条書き' : row.__group.length + '行の文章'));
       if (isImageRow(row)) tagsEl.appendChild(el('span', 'tag', '画像'));
       if (COL_KEY in row && keyPos(row[COL_KEY]) === null) tagsEl.appendChild(el('span', 'tag warn', 'ページ未使用'));
-      if (features.style && !isDefaultStyle(getStyle(row))) tagsEl.appendChild(el('span', 'tag', '位置調整あり'));
+      if (features.style) {
+        var st = getStyle(row);
+        if (!isImageRow(row) && hasFontStyle(st)) tagsEl.appendChild(el('span', 'tag', '文字設定あり'));
+        if (hasPosStyle(st)) tagsEl.appendChild(el('span', 'tag', '位置調整あり'));
+      }
       tagsEl.hidden = !tagsEl.firstChild;
     }
 
@@ -1501,6 +1606,116 @@
 
       panel = el('div', 'pos-panel');
       var controls = el('div', 'pos-controls');
+      function uid(p) { return p + '-' + Math.random().toString(36).slice(2, 7); }
+
+      /* --- 文字（テキストのみ） --- */
+      var fontSelect = null, sizeRange = null, sizeOut = null;
+      var colorLine = null, colorPicker = null, colorText = null, swatchBtns = [];
+      if (!img) {
+        var fontGroup = el('div', 'pos-group');
+        fontGroup.appendChild(el('p', 'pos-group-title', '文字'));
+
+        // フォント
+        var fBox = el('div');
+        var fId = uid('font');
+        var fLabel = el('label', 'field', 'フォント');
+        fLabel.htmlFor = fId;
+        fontSelect = el('select');
+        fontSelect.id = fId;
+        var opts = [{ label: '指定なし（サイトの標準）', value: '' }].concat(FONT_PRESETS);
+        if (draft.fontFamily && !FONT_PRESETS.some(function (f) { return f.value === draft.fontFamily; })) {
+          opts.push({ label: 'その他（現在の設定）', value: draft.fontFamily });
+        }
+        opts.forEach(function (f) {
+          var o = el('option', null, f.label);
+          o.value = f.value;
+          if (f.value) o.style.fontFamily = f.value;
+          fontSelect.appendChild(o);
+        });
+        fontSelect.addEventListener('change', function () { draft.fontFamily = fontSelect.value; update(); });
+        fBox.appendChild(fLabel);
+        fBox.appendChild(fontSelect);
+        fontGroup.appendChild(fBox);
+
+        // 大きさ
+        var sBox = el('div');
+        var sId = uid('size');
+        var sLabel = el('label', 'field', '大きさ');
+        sLabel.htmlFor = sId;
+        var sLine = el('div', 'range-line');
+        sizeRange = el('input');
+        sizeRange.type = 'range';
+        sizeRange.id = sId;
+        sizeRange.min = String(FONT_SIZE_MIN);
+        sizeRange.max = String(FONT_SIZE_MAX);
+        sizeRange.step = '1';
+        sizeOut = el('output');
+        var sizeAuto = button('標準', 'ghost mini-btn');
+        sizeRange.addEventListener('input', function () { draft.fontSize = clampFontSize(sizeRange.value); update(); });
+        sizeAuto.addEventListener('click', function () { draft.fontSize = null; update(); });
+        sLine.appendChild(sizeRange);
+        sLine.appendChild(sizeOut);
+        sLine.appendChild(sizeAuto);
+        sBox.appendChild(sLabel);
+        sBox.appendChild(sLine);
+        fontGroup.appendChild(sBox);
+
+        // 文字色
+        var cBox = el('div');
+        var cId = uid('color');
+        var cLabel = el('label', 'field', '文字色');
+        cLabel.htmlFor = cId;
+        colorLine = el('div', 'color-line');
+        colorPicker = el('input');
+        colorPicker.type = 'color';
+        colorPicker.setAttribute('aria-label', '文字色を選ぶ');
+        colorText = el('input');
+        colorText.type = 'text';
+        colorText.id = cId;
+        colorText.placeholder = '指定なし';
+        colorText.maxLength = 7;
+        colorText.autocomplete = 'off';
+        colorText.spellcheck = false;
+        var colorClear = button('標準', 'ghost mini-btn');
+        colorPicker.addEventListener('input', function () { draft.color = normalizeColor(colorPicker.value); update(); });
+        colorText.addEventListener('input', function () {
+          var raw = colorText.value.trim();
+          if (!raw) { draft.color = ''; update(true); return; }
+          var c = normalizeColor(raw);
+          if (c) { draft.color = c; update(true); }
+        });
+        colorText.addEventListener('blur', function () { colorText.value = draft.color; });
+        colorClear.addEventListener('click', function () { draft.color = ''; update(); });
+        colorLine.appendChild(colorPicker);
+        colorLine.appendChild(colorText);
+        colorLine.appendChild(colorClear);
+        var swatches = el('div', 'swatches');
+        swatches.setAttribute('role', 'group');
+        swatches.setAttribute('aria-label', 'よく使う色');
+        COLOR_SWATCHES.forEach(function (c) {
+          c = normalizeColor(c);
+          if (!c) return;
+          var b = el('button', 'swatch');
+          b.type = 'button';
+          b.style.backgroundColor = c;
+          b.title = c;
+          b.setAttribute('aria-label', '文字色 ' + c);
+          b.addEventListener('click', function () { draft.color = c; update(); });
+          b._color = c;
+          swatches.appendChild(b);
+          swatchBtns.push(b);
+        });
+        cBox.appendChild(cLabel);
+        cBox.appendChild(colorLine);
+        cBox.appendChild(swatches);
+        fontGroup.appendChild(cBox);
+
+        controls.appendChild(fontGroup);
+      }
+
+      /* --- 位置 --- */
+      var posGroup = el('div', 'pos-group');
+      if (!img) posGroup.appendChild(el('p', 'pos-group-title', '位置'));
 
       // 配置
       var alignBox = el('div');
@@ -1510,7 +1725,7 @@
         { value: 'center', text: '中央' }, { value: 'right', text: '右' }
       ], draft.align, function (a) { draft.align = a; update(); }, '配置');
       alignBox.appendChild(alignSeg);
-      controls.appendChild(alignBox);
+      posGroup.appendChild(alignBox);
 
       // ずらし量
       var pair = el('div', 'pair');
@@ -1533,7 +1748,7 @@
       }
       var xInput = numField('横（px）右が＋', 'x');
       var yInput = numField('縦（px）下が＋', 'y');
-      controls.appendChild(pair);
+      posGroup.appendChild(pair);
 
       // 画像の幅
       var widthRange = null, widthOut = null;
@@ -1561,13 +1776,15 @@
         line.appendChild(autoBtn);
         wBox.appendChild(wLabel);
         wBox.appendChild(line);
-        controls.appendChild(wBox);
+        posGroup.appendChild(wBox);
       }
+      controls.appendChild(posGroup);
 
       // ボタン
       var btns = el('div', 'pos-buttons');
-      var saveBtn = button('位置を保存');
-      var resetBtn = button('初期位置に戻す', 'ghost');
+      var saveLabel = img ? '位置を保存' : '保存';
+      var saveBtn = button(saveLabel);
+      var resetBtn = button(img ? '初期位置に戻す' : 'すべて初期状態に戻す', 'ghost');
       var closeBtn = button('閉じる', 'btn-cancel');
       btns.appendChild(saveBtn);
       btns.appendChild(resetBtn);
@@ -1591,7 +1808,8 @@
       target.setAttribute('aria-label', labelStr + '。矢印キーで1px、Shift＋矢印キーで10px移動');
       frame.appendChild(target);
       pvWrap.appendChild(frame);
-      pvWrap.appendChild(el('p', 'pv-note', '枠内の要素をドラッグ（または矢印キー）で位置を動かせます。実際のサイトでは画面幅により見え方が変わります。'));
+      pvWrap.appendChild(el('p', 'pv-note', '枠内の要素をドラッグ（または矢印キー）で位置を動かせます。実際のサイトでは画面幅により見え方が変わります。' +
+        (img ? '' : 'フォントは閲覧する端末に入っているものが使われるため、端末によっては近い書体で表示されます。')));
 
       panel.appendChild(controls);
       panel.appendChild(pvWrap);
@@ -1606,6 +1824,16 @@
         if (widthRange) {
           widthRange.value = draft.width === null ? 100 : draft.width;
           widthOut.value = draft.width === null ? '自動' : draft.width + '%';
+        }
+        if (fontSelect) {
+          fontSelect.value = draft.fontFamily;
+          sizeRange.value = draft.fontSize === null ? 16 : draft.fontSize;
+          sizeOut.value = draft.fontSize === null ? '標準' : draft.fontSize + 'px';
+          colorPicker.value = draft.color || '#000000';
+          if (!fromInput) colorText.value = draft.color;
+          colorLine.classList.toggle('unset', !draft.color);
+          swatchBtns.forEach(function (b) { b.setAttribute('aria-pressed', String(b._color === draft.color)); });
+          frame.classList.toggle('dark', isLightColor(draft.color));
         }
         applyStyle(target, draft, img && !!v);
       }
@@ -1656,10 +1884,10 @@
           closePanel();
           showTags();
           posBtn.focus();
-          showToast('☑位置を保存しました');
+          showToast(img ? '☑位置を保存しました' : '☑文字・位置を保存しました');
         } catch (err) {
           saveBtn.disabled = false;
-          saveBtn.textContent = '位置を保存';
+          saveBtn.textContent = saveLabel;
           showToast('保存に失敗しました：' + err.message, true);
         }
       });
@@ -1775,7 +2003,7 @@
   function showSetupNotice() {
     var missing = [];
     if (MANUAL_ORDER && !features.order) missing.push('並び順（' + COL_ORDER + ' 列）');
-    if (!features.style) missing.push('位置（' + COL_STYLE + ' 列）');
+    if (!features.style) missing.push('文字・位置の設定（' + COL_STYLE + ' 列）');
     noticeEl.hidden = missing.length === 0;
     noticeEl.textContent = missing.length
       ? missing.join('と') + 'を保存するには、Supabaseのテーブルに列の追加が必要です。設定手順（cms-setup.md）をご確認ください。'
