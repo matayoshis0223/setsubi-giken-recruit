@@ -17,6 +17,8 @@
     --white: #FFFFFF;
     --danger: #C0392B;
     --danger-bg: #FDECEA;
+    --note-bg: #FFF7E0;
+    --note-line: #F0D48A;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
@@ -30,6 +32,10 @@
   }
   button, select, textarea, input { font: inherit; }
   [hidden] { display: none !important; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
 
   /* ---------- ログイン ---------- */
   #login {
@@ -51,8 +57,8 @@
   }
   .login-box h1 { margin: 0 0 4px; font-size: 1.3rem; color: var(--blue); }
   .login-box p { margin: 0 0 20px; color: var(--muted); font-size: .9rem; }
-  label.field { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 6px; }
-  input[type="password"] {
+  label.field, span.field { display: block; font-size: .85rem; font-weight: 600; margin-bottom: 6px; }
+  input[type="password"], input[type="url"], input[type="number"] {
     width: 100%;
     padding: 12px 14px;
     border: 1px solid var(--blue-line);
@@ -82,6 +88,8 @@
   .btn.ghost:hover { background: var(--blue-light); }
   .btn.block { width: 100%; margin-top: 14px; }
   .btn.small { padding: 6px 16px; min-height: 40px; }
+  .btn.danger-text { background: var(--white); color: var(--danger); border-color: var(--blue-line); }
+  .btn.danger-text:hover { background: var(--danger-bg); }
   :focus-visible { outline: 3px solid #7FB2DE; outline-offset: 2px; }
 
   /* ---------- ヘッダー ---------- */
@@ -143,9 +151,18 @@
     padding: 10px 14px;
     margin-left: 0; margin-right: 0;
   }
+  #notice {
+    margin: 16px 0 0;
+    background: var(--note-bg);
+    border: 1px solid var(--note-line);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: .88rem;
+  }
+  #hint { margin: 14px 4px 0; color: var(--muted); font-size: .85rem; }
 
   /* ---------- 一覧 ---------- */
-  #list { margin-top: 16px; display: grid; gap: 10px; }
+  #list { margin-top: 12px; display: grid; gap: 10px; }
   .row {
     background: var(--white);
     border: 1px solid var(--blue-line);
@@ -157,11 +174,32 @@
     gap: 6px 16px;
     align-items: start;
   }
-  .row.editing { border-left-color: var(--blue-dark); box-shadow: 0 0 0 2px var(--blue-light); }
+  #list.can-reorder .row { grid-template-columns: 32px 200px 1fr auto; padding-left: 8px; }
+  #list:not(.can-reorder) .handle { display: none; }
+  .row.editing, .row.positioning { border-left-color: var(--blue-dark); box-shadow: 0 0 0 2px var(--blue-light); }
+  .row.dragging {
+    border-left-color: var(--blue-dark);
+    box-shadow: 0 8px 24px rgba(20, 84, 137, .25);
+    position: relative;
+    z-index: 2;
+    opacity: .95;
+  }
+  body.is-dragging { user-select: none; -webkit-user-select: none; cursor: grabbing; }
   .row .label { font-weight: 700; color: var(--blue-dark); word-break: break-word; }
+  .row .label .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .tag {
+    display: inline-block;
+    font-size: .72rem;
+    font-weight: 600;
+    line-height: 1.5;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--blue-light);
+    color: var(--blue-dark);
+  }
   .row .value { white-space: pre-wrap; word-break: break-word; min-width: 0; }
   .row .value.empty { color: var(--muted); font-style: italic; }
-  .row .actions { display: flex; gap: 8px; }
+  .row .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .row textarea {
     width: 100%;
     min-height: 88px;
@@ -175,6 +213,143 @@
     resize: vertical;
   }
   .btn-cancel { background: var(--white); color: var(--blue); }
+
+  .handle {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    width: 32px;
+    height: 40px;
+    padding: 0;
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: grab;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .handle:hover { background: var(--blue-light); color: var(--blue); }
+  .handle:disabled { cursor: default; opacity: .4; }
+  .handle svg { width: 14px; height: 20px; }
+
+  /* 画像の表示 */
+  .checker {
+    background-color: #fff;
+    background-image:
+      linear-gradient(45deg, #EEF2F6 25%, transparent 25%, transparent 75%, #EEF2F6 75%),
+      linear-gradient(45deg, #EEF2F6 25%, transparent 25%, transparent 75%, #EEF2F6 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 8px 8px;
+  }
+  .thumb {
+    display: block;
+    max-width: 100%;
+    max-height: 180px;
+    border: 1px solid var(--blue-line);
+    border-radius: 4px;
+  }
+  .img-url { display: block; margin-top: 4px; font-size: .78rem; color: var(--muted); word-break: break-all; white-space: normal; }
+
+  /* 編集：種類の切替 */
+  .seg { display: inline-flex; border: 1px solid var(--blue); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+  .seg button {
+    appearance: none;
+    border: 0;
+    border-left: 1px solid var(--blue);
+    background: var(--white);
+    color: var(--blue);
+    padding: 6px 14px;
+    min-height: 38px;
+    font-size: .88rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .seg button:first-child { border-left: 0; }
+  .seg button[aria-pressed="true"] { background: var(--blue); color: var(--white); }
+
+  /* 編集：画像 */
+  .img-editor { display: grid; gap: 10px; white-space: normal; }
+  .img-preview {
+    min-height: 120px;
+    border: 1px solid var(--blue-line);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+  .img-preview img { max-width: 100%; max-height: 240px; display: block; }
+  .img-preview .none { color: var(--muted); font-size: .88rem; }
+  .drop {
+    position: relative;
+    display: block;
+    border: 2px dashed var(--blue-line);
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+    color: var(--blue);
+    font-weight: 600;
+    font-size: .92rem;
+    cursor: pointer;
+    background: var(--white);
+  }
+  .drop:hover, .drop.over { border-color: var(--blue); background: var(--blue-light); }
+  .drop small { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; }
+  .drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+  .drop:focus-within { outline: 3px solid #7FB2DE; outline-offset: 2px; }
+  .img-file { font-size: .82rem; color: var(--muted); word-break: break-all; }
+  .img-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .img-row .grow { flex: 1 1 200px; }
+  .img-editor input[type="url"] { padding: 9px 12px; }
+
+  /* ---------- 位置調整パネル ---------- */
+  .pos-panel {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--blue-line);
+    margin-top: 8px;
+    padding-top: 14px;
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) 1fr;
+    gap: 16px;
+  }
+  .pos-controls { display: grid; gap: 14px; align-content: start; }
+  .pos-controls .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pos-controls input[type="number"] { padding: 8px 10px; }
+  .pos-controls .seg { margin-bottom: 0; display: flex; }
+  .pos-controls .seg button { flex: 1; padding: 6px 4px; }
+  .range-line { display: flex; align-items: center; gap: 10px; }
+  .range-line input[type="range"] { flex: 1; accent-color: var(--blue); }
+  .range-line output { min-width: 3.6em; text-align: right; font-size: .88rem; color: var(--muted); }
+  .pos-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pv-wrap { min-width: 0; }
+  .pv-frame {
+    position: relative;
+    overflow: hidden;
+    border: 1px dashed var(--blue);
+    border-radius: 6px;
+    padding: 24px 16px;
+    min-height: 180px;
+    background-color: var(--white);
+    background-image:
+      linear-gradient(var(--blue-light) 1px, transparent 1px),
+      linear-gradient(90deg, var(--blue-light) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .pv-target {
+    cursor: move;
+    touch-action: none;
+    outline: 1px dashed transparent;
+    outline-offset: 2px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .pv-target:hover, .pv-target.moving { outline-color: var(--blue); }
+  .pv-target:focus-visible { outline: 2px solid var(--blue); }
+  img.pv-target { display: block; max-width: none; height: auto; -webkit-user-drag: none; }
+  .pv-note { margin: 6px 0 0; font-size: .8rem; color: var(--muted); }
 
   /* ---------- トースト ---------- */
   #toast {
@@ -201,9 +376,14 @@
   /* ---------- スマホ ---------- */
   @media (max-width: 640px) {
     .row { grid-template-columns: 1fr; gap: 6px; padding: 14px; }
-    .row .actions { justify-content: flex-end; }
+    #list.can-reorder .row { grid-template-columns: 32px minmax(0, 1fr); padding-left: 6px; }
+    #list.can-reorder .row > .handle { grid-row: 1 / span 3; }
+    #list.can-reorder .row > .label,
+    #list.can-reorder .row > .value,
+    #list.can-reorder .row > .actions { grid-column: 2; }
     .row .actions .btn { flex: 1; }
     .row:not(.editing) .actions .btn { flex: 0 0 auto; min-width: 96px; }
+    .pos-panel { grid-template-columns: 1fr; }
     .top h1 { font-size: 1rem; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -243,7 +423,9 @@
       <button type="button" class="btn ghost" id="reloadBtn">再読み込み</button>
     </div>
 
+    <p id="notice" hidden></p>
     <p id="status">セクションを選択してください。</p>
+    <p id="hint" hidden>左端の ⋮⋮ をドラッグすると並び順を変えられます（キーボードでは ↑↓ キー）。</p>
     <div id="list"></div>
   </main>
 </div>
@@ -265,13 +447,25 @@
   var COL_LABEL = 'label';
   var COL_VALUE = 'value';
   var COL_ID = 'id';
+  var COL_ORDER = 'sort_order'; // 並び順（integer）。列が無ければ並べ替えは無効になる
+  var COL_STYLE = 'style';      // 位置情報（jsonb）。列が無ければ位置調整は無効になる
+
+  // 画像の保存先（Supabase Storage の公開バケット名）
+  var STORAGE_BUCKET = 'cms-images';
+  // Storageが使えない時、画像をデータとして直接保存するか確認する
+  var ALLOW_INLINE_FALLBACK = true;
+  // アップロード前に縮小する長辺の最大ピクセル
+  var IMAGE_MAX_SIDE = 1920;
 
   /* ===== 要素 ===== */
   var $ = function (id) { return document.getElementById(id); };
   var loginEl = $('login'), appEl = $('app');
   var pwEl = $('pw'), loginError = $('loginError');
   var selectEl = $('sectionSelect'), listEl = $('list'), statusEl = $('status'), toastEl = $('toast');
+  var noticeEl = $('notice'), hintEl = $('hint');
   var loadSeq = 0, toastTimer = null;
+  var features = { order: false, style: false };
+  var orderSaving = false;
 
   /* ===== Supabase REST ===== */
   function headers(extra) {
@@ -283,33 +477,38 @@
     return SUPABASE_URL + '/rest/v1/' + TABLE + '?' + query;
   }
   function errorText(res, body) {
-    var msg = (body && (body.message || body.error_description || body.hint)) || ('HTTP ' + res.status);
+    var msg = (body && (body.message || body.error_description || body.error || body.hint)) || ('HTTP ' + res.status);
     return msg;
   }
 
   async function fetchSection(section) {
     var base = 'select=*&' + COL_SECTION + '=eq.' + encodeURIComponent(section);
-    // 通常はid順。idの列が無い場合は並び順なしで再取得する
-    var res = await fetch(endpoint(base + '&order=' + COL_ID + '.asc'), { headers: headers() });
-    if (res.status === 400) {
-      res = await fetch(endpoint(base), { headers: headers() });
+    // 並び順列 → id → 並び順なし の順に試す（列が無いと400になる）
+    var tries = [
+      '&order=' + COL_ORDER + '.asc.nullslast,' + COL_ID + '.asc',
+      '&order=' + COL_ID + '.asc',
+      ''
+    ];
+    var res;
+    for (var i = 0; i < tries.length; i++) {
+      res = await fetch(endpoint(base + tries[i]), { headers: headers() });
+      if (res.status !== 400) break;
     }
     var body = await res.json().catch(function () { return null; });
     if (!res.ok) throw new Error(errorText(res, body));
     return body || [];
   }
 
-  async function updateRow(row, newValue) {
-    var filter;
+  function rowFilter(row) {
     if (row[COL_ID] !== undefined && row[COL_ID] !== null) {
-      filter = COL_ID + '=eq.' + encodeURIComponent(row[COL_ID]);
-    } else {
-      filter = COL_SECTION + '=eq.' + encodeURIComponent(row[COL_SECTION]) +
-               '&' + COL_LABEL + '=eq.' + encodeURIComponent(row[COL_LABEL]);
+      return COL_ID + '=eq.' + encodeURIComponent(row[COL_ID]);
     }
-    var payload = {};
-    payload[COL_VALUE] = newValue;
-    var res = await fetch(endpoint(filter), {
+    return COL_SECTION + '=eq.' + encodeURIComponent(row[COL_SECTION]) +
+           '&' + COL_LABEL + '=eq.' + encodeURIComponent(row[COL_LABEL]);
+  }
+
+  async function patchRow(row, payload) {
+    var res = await fetch(endpoint(rowFilter(row)), {
       method: 'PATCH',
       headers: headers({ 'Content-Type': 'application/json', 'Prefer': 'return=representation' }),
       body: JSON.stringify(payload)
@@ -321,6 +520,137 @@
       throw new Error('更新できませんでした。SupabaseのRLS（UPDATEポリシー）を確認してください。');
     }
     return body[0];
+  }
+
+  /* ===== 画像 ===== */
+  var IMG_EXT_RE = /\.(png|jpe?g|gif|webp|svg|avif|bmp)(\?[^\s]*)?$/i;
+  var IMG_LABEL_RE = /画像|写真|イメージ|ロゴ|アイコン|バナー|サムネ|image|img|photo|picture|logo|icon|banner|thumb/i;
+
+  function isImageValue(v) {
+    if (!v || /\s/.test(v.trim())) return false;
+    v = v.trim();
+    if (/^data:image\//i.test(v)) return true;
+    if (!/^(https?:)?\/\//i.test(v) && v.charAt(0) !== '/') return false;
+    return IMG_EXT_RE.test(v) || v.indexOf('/storage/v1/object/public/') !== -1;
+  }
+  function isImageRow(row) {
+    var v = valueText(row[COL_VALUE]);
+    if (v) return isImageValue(v);
+    return IMG_LABEL_RE.test(valueText(row[COL_LABEL]));
+  }
+
+  function loadImageEl(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('画像を読み込めませんでした。')); };
+      img.src = src;
+    });
+  }
+
+  // 大きすぎる画像は縮小・圧縮してから保存する
+  async function prepareImage(file, maxSide) {
+    if (!/^image\//.test(file.type)) throw new Error('画像ファイルを選んでください。');
+    // SVGとGIF（アニメーション）はそのまま
+    if (file.type === 'image/svg+xml' || file.type === 'image/gif') return file;
+    var url = URL.createObjectURL(file);
+    try {
+      var img = await loadImageEl(url);
+      var w = img.naturalWidth, h = img.naturalHeight;
+      var scale = Math.min(1, maxSide / Math.max(w, h));
+      if (scale === 1 && file.size <= 1.5 * 1024 * 1024) return file;
+      var canvas = document.createElement('canvas');
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      // 透過を持ちうる形式はWebP、それ以外はJPEG
+      var hasAlpha = file.type === 'image/png' || file.type === 'image/webp';
+      var outType = hasAlpha ? 'image/webp' : 'image/jpeg';
+      var blob = await new Promise(function (r) { canvas.toBlob(r, outType, 0.86); });
+      if (!blob) return file;
+      return blob.size < file.size || scale < 1 ? blob : file;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function extFor(type) {
+    return ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+              'image/svg+xml': 'svg', 'image/avif': 'avif', 'image/bmp': 'bmp' })[type] || 'img';
+  }
+
+  async function uploadToStorage(blob, section) {
+    var name = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8) + '.' + extFor(blob.type);
+    var path = (section || 'misc').replace(/[^a-zA-Z0-9_-]/g, '_') + '/' + name;
+    var res = await fetch(SUPABASE_URL + '/storage/v1/object/' + STORAGE_BUCKET + '/' + path, {
+      method: 'POST',
+      headers: headers({ 'Content-Type': blob.type || 'application/octet-stream', 'x-upsert': 'false', 'cache-control': '31536000' }),
+      body: blob
+    });
+    var body = await res.json().catch(function () { return null; });
+    if (!res.ok) throw new Error(errorText(res, body));
+    return SUPABASE_URL + '/storage/v1/object/public/' + STORAGE_BUCKET + '/' + path;
+  }
+
+  function blobToDataURL(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(r.result); };
+      r.onerror = function () { reject(new Error('画像の変換に失敗しました。')); };
+      r.readAsDataURL(blob);
+    });
+  }
+
+  // 画像を保存してURL（またはデータURL）を返す
+  async function saveImageFile(file, section) {
+    var blob = await prepareImage(file, IMAGE_MAX_SIDE);
+    try {
+      return await uploadToStorage(blob, section);
+    } catch (err) {
+      if (!ALLOW_INLINE_FALLBACK) throw new Error('画像のアップロードに失敗しました（' + err.message + '）');
+      var ok = window.confirm(
+        '画像をStorage「' + STORAGE_BUCKET + '」にアップロードできませんでした。\n（' + err.message + '）\n\n' +
+        '代わりに画像をデータとして直接保存しますか？\n※ 小さめに縮小して保存します。');
+      if (!ok) throw new Error('画像のアップロードを中止しました。');
+      var small = await prepareImage(file, 1200);
+      var dataUrl = await blobToDataURL(small);
+      if (dataUrl.length > 2.5 * 1024 * 1024) throw new Error('画像が大きすぎて直接保存できません。');
+      return dataUrl;
+    }
+  }
+
+  /* ===== 位置情報 ===== */
+  function defaultStyle() { return { align: '', x: 0, y: 0, width: null }; }
+  function getStyle(row) {
+    var s = row[COL_STYLE];
+    if (typeof s === 'string') { try { s = JSON.parse(s); } catch (e) { s = null; } }
+    var d = defaultStyle();
+    if (s && typeof s === 'object') {
+      if (['left', 'center', 'right'].indexOf(s.align) !== -1) d.align = s.align;
+      d.x = Number(s.x) || 0;
+      d.y = Number(s.y) || 0;
+      d.width = (s.width === null || s.width === undefined || s.width === '') ? null : Math.max(5, Math.min(100, Number(s.width) || 100));
+    }
+    return d;
+  }
+  function isDefaultStyle(s) { return !s.align && !s.x && !s.y && s.width === null; }
+  function styleForSave(row, s) {
+    var out = isDefaultStyle(s) ? null : { align: s.align || null, x: s.x, y: s.y, width: s.width };
+    // 列がtext型で文字列として保存されていた場合は文字列で返す
+    if (out && typeof row[COL_STYLE] === 'string') return JSON.stringify(out);
+    return out;
+  }
+  // 公開サイト側と同じルールで見た目に反映する
+  function applyStyle(target, s, isImg) {
+    target.style.transform = (s.x || s.y) ? 'translate(' + s.x + 'px,' + s.y + 'px)' : '';
+    if (isImg) {
+      target.style.width = s.width !== null ? s.width + '%' : '';
+      target.style.maxWidth = s.width !== null ? '' : '100%';
+      target.style.marginLeft = s.align === 'center' || s.align === 'right' ? 'auto' : '';
+      target.style.marginRight = s.align === 'center' ? 'auto' : '';
+    } else {
+      target.style.textAlign = s.align || '';
+    }
   }
 
   /* ===== 表示 ===== */
@@ -341,51 +671,235 @@
     if (text !== undefined) e.textContent = text;
     return e;
   }
+  function button(text, cls) {
+    var b = el('button', 'btn small' + (cls ? ' ' + cls : ''), text);
+    b.type = 'button';
+    return b;
+  }
   function valueText(v) {
     if (v === null || v === undefined) return '';
     return typeof v === 'string' ? v : JSON.stringify(v);
   }
+  function segmented(options, current, onChange, label) {
+    var seg = el('div', 'seg');
+    seg.setAttribute('role', 'group');
+    if (label) seg.setAttribute('aria-label', label);
+    var buttons = options.map(function (o) {
+      var b = el('button', null, o.text);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(o.value === current));
+      b.addEventListener('click', function () {
+        buttons.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+        b.setAttribute('aria-pressed', 'true');
+        onChange(o.value);
+      });
+      seg.appendChild(b);
+      return b;
+    });
+    seg.set = function (value) {
+      options.forEach(function (o, i) { buttons[i].setAttribute('aria-pressed', String(o.value === value)); });
+    };
+    return seg;
+  }
+
+  var GRIP_SVG = '<svg viewBox="0 0 14 20" aria-hidden="true"><g fill="currentColor">' +
+    '<circle cx="4" cy="4" r="1.7"/><circle cx="10" cy="4" r="1.7"/>' +
+    '<circle cx="4" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/>' +
+    '<circle cx="4" cy="16" r="1.7"/><circle cx="10" cy="16" r="1.7"/></g></svg>';
 
   function renderRow(row) {
+    var labelStr = valueText(row[COL_LABEL]);
     var wrap = el('div', 'row');
-    var labelEl = el('div', 'label', valueText(row[COL_LABEL]));
+    wrap._row = row;
+
+    var handle = el('button', 'handle');
+    handle.type = 'button';
+    handle.innerHTML = GRIP_SVG;
+    handle.setAttribute('aria-label', labelStr + ' の並び順を変更（↑↓キーで移動）');
+    handle.title = 'ドラッグで並べ替え';
+
+    var labelEl = el('div', 'label');
+    labelEl.appendChild(el('span', null, labelStr));
+    var tagsEl = el('div', 'tags');
+    labelEl.appendChild(tagsEl);
+
     var valueEl = el('div', 'value');
     var actions = el('div', 'actions');
-    var editBtn = el('button', 'btn small', '編集');
-    editBtn.type = 'button';
-    actions.appendChild(editBtn);
+    var editBtn = button('編集');
+    var posBtn = button('位置', 'ghost');
+    var panel = null;
+
+    function showActions() {
+      actions.textContent = '';
+      actions.appendChild(editBtn);
+      if (features.style) actions.appendChild(posBtn);
+    }
+
+    function showTags() {
+      tagsEl.textContent = '';
+      if (isImageRow(row)) tagsEl.appendChild(el('span', 'tag', '画像'));
+      if (features.style && !isDefaultStyle(getStyle(row))) tagsEl.appendChild(el('span', 'tag', '位置調整あり'));
+      tagsEl.hidden = !tagsEl.firstChild;
+    }
 
     function showValue() {
-      var t = valueText(row[COL_VALUE]);
-      valueEl.textContent = t || '（未入力）';
-      valueEl.className = 'value' + (t ? '' : ' empty');
+      var v = valueText(row[COL_VALUE]);
+      var img = isImageRow(row);
+      valueEl.textContent = '';
+      valueEl.className = 'value';
+      if (!v) {
+        valueEl.textContent = img ? '（画像未設定）' : '（未入力）';
+        valueEl.classList.add('empty');
+      } else if (img) {
+        var im = el('img', 'thumb checker');
+        im.src = v;
+        im.alt = labelStr;
+        im.loading = 'lazy';
+        valueEl.appendChild(im);
+        if (!/^data:/i.test(v)) valueEl.appendChild(el('span', 'img-url', v));
+        else valueEl.appendChild(el('span', 'img-url', '（データとして保存された画像）'));
+      } else {
+        valueEl.textContent = v;
+      }
+      showTags();
     }
     showValue();
+    showActions();
 
+    /* ----- 内容の編集（テキスト / 画像） ----- */
     editBtn.addEventListener('click', function () {
+      closePanel();
       wrap.classList.add('editing');
-      var ta = el('textarea');
-      ta.value = valueText(row[COL_VALUE]);
-      ta.setAttribute('aria-label', valueText(row[COL_LABEL]) + 'の値');
+      var current = valueText(row[COL_VALUE]);
+      var mode = isImageRow(row) ? 'image' : 'text';
+      var pendingFile = null, objectUrl = null;
+
       valueEl.className = 'value';
       valueEl.textContent = '';
-      valueEl.appendChild(ta);
 
-      var saveBtn = el('button', 'btn small', '保存');
-      var cancelBtn = el('button', 'btn small btn-cancel', 'キャンセル');
-      saveBtn.type = 'button';
-      cancelBtn.type = 'button';
+      var seg = segmented([{ value: 'text', text: 'テキスト' }, { value: 'image', text: '画像' }], mode, function (m) {
+        mode = m;
+        textPane.hidden = m !== 'text';
+        imgPane.hidden = m !== 'image';
+        (m === 'text' ? ta : fileInput).focus();
+      }, '内容の種類');
+      valueEl.appendChild(seg);
+
+      // テキスト
+      var textPane = el('div');
+      var ta = el('textarea');
+      ta.value = mode === 'text' ? current : '';
+      ta.setAttribute('aria-label', labelStr + 'の値');
+      textPane.appendChild(ta);
+
+      // 画像
+      var imgPane = el('div', 'img-editor');
+      var preview = el('div', 'img-preview checker');
+      var dropLabel = el('label', 'drop');
+      dropLabel.appendChild(document.createTextNode('画像を選ぶ、またはここにドロップ'));
+      dropLabel.appendChild(el('small', null, 'JPEG / PNG / WebP / GIF / SVG（大きい画像は自動で縮小します）'));
+      var fileInput = el('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.setAttribute('aria-label', labelStr + 'の画像を選ぶ');
+      dropLabel.appendChild(fileInput);
+      var fileInfo = el('div', 'img-file');
+      var urlRow = el('div', 'img-row');
+      var urlWrap = el('div', 'grow');
+      var urlInput = el('input');
+      urlInput.type = 'url';
+      urlInput.placeholder = 'または画像のURLを入力';
+      urlInput.setAttribute('aria-label', '画像のURL');
+      urlInput.value = mode === 'image' && !/^data:/i.test(current) ? current : '';
+      urlWrap.appendChild(urlInput);
+      var clearBtn = button('画像を外す', 'danger-text');
+      urlRow.appendChild(urlWrap);
+      urlRow.appendChild(clearBtn);
+      imgPane.appendChild(preview);
+      imgPane.appendChild(dropLabel);
+      imgPane.appendChild(fileInfo);
+      imgPane.appendChild(urlRow);
+
+      var imageSrc = mode === 'image' ? current : '';
+      function drawPreview() {
+        preview.textContent = '';
+        var src = objectUrl || imageSrc;
+        if (src) {
+          var im = el('img');
+          im.src = src;
+          im.alt = 'プレビュー';
+          im.onerror = function () { preview.textContent = ''; preview.appendChild(el('span', 'none', '画像を表示できません。URLを確認してください。')); };
+          preview.appendChild(im);
+        } else {
+          preview.appendChild(el('span', 'none', '画像が設定されていません'));
+        }
+      }
+      function setFile(file) {
+        if (!file) return;
+        if (!/^image\//.test(file.type)) { showToast('画像ファイルを選んでください。', true); return; }
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        pendingFile = file;
+        objectUrl = URL.createObjectURL(file);
+        urlInput.value = '';
+        fileInfo.textContent = '選択中：' + (file.name || '貼り付けた画像') + '（' + Math.ceil(file.size / 1024) + ' KB）— 保存するとアップロードされます';
+        drawPreview();
+      }
+      function clearFile() {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+        pendingFile = null;
+        fileInfo.textContent = '';
+        fileInput.value = '';
+      }
+      fileInput.addEventListener('change', function () { setFile(fileInput.files[0]); });
+      ['dragenter', 'dragover'].forEach(function (t) {
+        dropLabel.addEventListener(t, function (e) { e.preventDefault(); dropLabel.classList.add('over'); });
+      });
+      ['dragleave', 'drop'].forEach(function (t) {
+        dropLabel.addEventListener(t, function () { dropLabel.classList.remove('over'); });
+      });
+      dropLabel.addEventListener('drop', function (e) {
+        e.preventDefault();
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+      });
+      imgPane.addEventListener('paste', function (e) {
+        var items = (e.clipboardData && e.clipboardData.files) || [];
+        if (items[0] && /^image\//.test(items[0].type)) { e.preventDefault(); setFile(items[0]); }
+      });
+      urlInput.addEventListener('input', function () {
+        clearFile();
+        imageSrc = urlInput.value.trim();
+        drawPreview();
+      });
+      clearBtn.addEventListener('click', function () {
+        clearFile();
+        urlInput.value = '';
+        imageSrc = '';
+        drawPreview();
+      });
+      drawPreview();
+
+      textPane.hidden = mode !== 'text';
+      imgPane.hidden = mode !== 'image';
+      valueEl.appendChild(textPane);
+      valueEl.appendChild(imgPane);
+
+      var saveBtn = button('保存');
+      var cancelBtn = button('キャンセル', 'btn-cancel');
       actions.textContent = '';
       actions.appendChild(saveBtn);
       actions.appendChild(cancelBtn);
-      ta.focus();
-      ta.setSelectionRange(ta.value.length, ta.value.length);
+      if (mode === 'text') {
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      }
 
       function leaveEdit() {
+        clearFile();
         wrap.classList.remove('editing');
         showValue();
-        actions.textContent = '';
-        actions.appendChild(editBtn);
+        showActions();
+        editBtn.focus();
       }
 
       cancelBtn.addEventListener('click', leaveEdit);
@@ -395,7 +909,24 @@
         cancelBtn.disabled = true;
         saveBtn.textContent = '保存中…';
         try {
-          var updated = await updateRow(row, ta.value);
+          var newValue;
+          if (mode === 'text') {
+            newValue = ta.value;
+          } else if (pendingFile) {
+            saveBtn.textContent = 'アップロード中…';
+            newValue = await saveImageFile(pendingFile, row[COL_SECTION]);
+            saveBtn.textContent = '保存中…';
+          } else if (!urlInput.value.trim() && /^data:/i.test(imageSrc)) {
+            newValue = imageSrc; // 直接保存済みの画像をそのまま残す
+          } else {
+            newValue = urlInput.value.trim();
+            if (newValue && !isImageValue(newValue)) {
+              throw new Error('画像のURLとして認識できません（.jpg / .png などで終わるURLを入力してください）。');
+            }
+          }
+          var payload = {};
+          payload[COL_VALUE] = newValue;
+          var updated = await patchRow(row, payload);
           row[COL_VALUE] = updated[COL_VALUE];
           leaveEdit();
           showToast('☑保存しました');
@@ -408,15 +939,312 @@
       });
     });
 
+    /* ----- 位置の調整 ----- */
+    function closePanel() {
+      if (!panel) return;
+      panel.remove();
+      panel = null;
+      wrap.classList.remove('positioning');
+      posBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    posBtn.setAttribute('aria-expanded', 'false');
+    posBtn.addEventListener('click', function () {
+      if (panel) { closePanel(); return; }
+      wrap.classList.add('positioning');
+      posBtn.setAttribute('aria-expanded', 'true');
+      var draft = getStyle(row);
+      var img = isImageRow(row);
+      var v = valueText(row[COL_VALUE]);
+
+      panel = el('div', 'pos-panel');
+      var controls = el('div', 'pos-controls');
+
+      // 配置
+      var alignBox = el('div');
+      alignBox.appendChild(el('span', 'field', '配置'));
+      var alignSeg = segmented([
+        { value: '', text: '指定なし' }, { value: 'left', text: '左' },
+        { value: 'center', text: '中央' }, { value: 'right', text: '右' }
+      ], draft.align, function (a) { draft.align = a; update(); }, '配置');
+      alignBox.appendChild(alignSeg);
+      controls.appendChild(alignBox);
+
+      // ずらし量
+      var pair = el('div', 'pair');
+      function numField(text, key) {
+        var box = el('div');
+        var id = 'pos-' + key + '-' + Math.random().toString(36).slice(2, 7);
+        var lb = el('label', 'field', text);
+        lb.htmlFor = id;
+        var inp = el('input');
+        inp.type = 'number';
+        inp.step = '1';
+        inp.id = id;
+        inp.inputMode = 'numeric';
+        inp.value = draft[key];
+        inp.addEventListener('input', function () { draft[key] = Math.round(Number(inp.value) || 0); update(true); });
+        box.appendChild(lb);
+        box.appendChild(inp);
+        pair.appendChild(box);
+        return inp;
+      }
+      var xInput = numField('横（px）右が＋', 'x');
+      var yInput = numField('縦（px）下が＋', 'y');
+      controls.appendChild(pair);
+
+      // 画像の幅
+      var widthRange = null, widthOut = null;
+      if (img) {
+        var wBox = el('div');
+        var wId = 'pos-w-' + Math.random().toString(36).slice(2, 7);
+        var wLabel = el('label', 'field', '画像の幅');
+        wLabel.htmlFor = wId;
+        var line = el('div', 'range-line');
+        widthRange = el('input');
+        widthRange.type = 'range';
+        widthRange.id = wId;
+        widthRange.min = '5';
+        widthRange.max = '100';
+        widthRange.step = '5';
+        widthRange.value = draft.width === null ? 100 : draft.width;
+        widthOut = el('output');
+        var autoBtn = button('自動', 'ghost');
+        autoBtn.style.minHeight = '34px';
+        autoBtn.style.padding = '2px 10px';
+        widthRange.addEventListener('input', function () { draft.width = Number(widthRange.value); update(); });
+        autoBtn.addEventListener('click', function () { draft.width = null; update(); });
+        line.appendChild(widthRange);
+        line.appendChild(widthOut);
+        line.appendChild(autoBtn);
+        wBox.appendChild(wLabel);
+        wBox.appendChild(line);
+        controls.appendChild(wBox);
+      }
+
+      // ボタン
+      var btns = el('div', 'pos-buttons');
+      var saveBtn = button('位置を保存');
+      var resetBtn = button('初期位置に戻す', 'ghost');
+      var closeBtn = button('閉じる', 'btn-cancel');
+      btns.appendChild(saveBtn);
+      btns.appendChild(resetBtn);
+      btns.appendChild(closeBtn);
+      controls.appendChild(btns);
+
+      // プレビュー
+      var pvWrap = el('div', 'pv-wrap');
+      var frame = el('div', 'pv-frame');
+      var target;
+      if (img && v) {
+        target = el('img', 'pv-target');
+        target.src = v;
+        target.alt = labelStr;
+        target.draggable = false;
+      } else {
+        target = el('div', 'pv-target', v || (img ? '（画像未設定）' : '（未入力）'));
+      }
+      target.tabIndex = 0;
+      target.setAttribute('role', 'application');
+      target.setAttribute('aria-label', labelStr + '。矢印キーで1px、Shift＋矢印キーで10px移動');
+      frame.appendChild(target);
+      pvWrap.appendChild(frame);
+      pvWrap.appendChild(el('p', 'pv-note', '枠内の要素をドラッグ（または矢印キー）で位置を動かせます。実際のサイトでは画面幅により見え方が変わります。'));
+
+      panel.appendChild(controls);
+      panel.appendChild(pvWrap);
+      wrap.appendChild(panel);
+
+      function update(fromInput) {
+        if (!fromInput) {
+          xInput.value = draft.x;
+          yInput.value = draft.y;
+        }
+        alignSeg.set(draft.align);
+        if (widthRange) {
+          widthRange.value = draft.width === null ? 100 : draft.width;
+          widthOut.value = draft.width === null ? '自動' : draft.width + '%';
+        }
+        applyStyle(target, draft, img && !!v);
+      }
+      update();
+
+      // ドラッグで移動
+      target.addEventListener('pointerdown', function (e) {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        target.setPointerCapture(e.pointerId);
+        target.classList.add('moving');
+        var sx = e.clientX, sy = e.clientY, ox = draft.x, oy = draft.y;
+        function move(ev) {
+          draft.x = Math.round(ox + ev.clientX - sx);
+          draft.y = Math.round(oy + ev.clientY - sy);
+          update();
+        }
+        function up() {
+          target.classList.remove('moving');
+          target.removeEventListener('pointermove', move);
+          target.removeEventListener('pointerup', up);
+          target.removeEventListener('pointercancel', up);
+        }
+        target.addEventListener('pointermove', move);
+        target.addEventListener('pointerup', up);
+        target.addEventListener('pointercancel', up);
+      });
+      target.addEventListener('keydown', function (e) {
+        var step = e.shiftKey ? 10 : 1;
+        var map = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+        if (!map[e.key]) return;
+        e.preventDefault();
+        draft.x += map[e.key][0];
+        draft.y += map[e.key][1];
+        update();
+      });
+
+      resetBtn.addEventListener('click', function () { draft = defaultStyle(); update(); });
+      closeBtn.addEventListener('click', function () { closePanel(); posBtn.focus(); });
+      saveBtn.addEventListener('click', async function () {
+        saveBtn.disabled = true;
+        saveBtn.textContent = '保存中…';
+        try {
+          var payload = {};
+          payload[COL_STYLE] = styleForSave(row, draft);
+          var updated = await patchRow(row, payload);
+          row[COL_STYLE] = updated[COL_STYLE];
+          closePanel();
+          showTags();
+          posBtn.focus();
+          showToast('☑位置を保存しました');
+        } catch (err) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = '位置を保存';
+          showToast('保存に失敗しました：' + err.message, true);
+        }
+      });
+    });
+
+    initReorder(handle, wrap);
+
+    wrap.appendChild(handle);
     wrap.appendChild(labelEl);
     wrap.appendChild(valueEl);
     wrap.appendChild(actions);
     return wrap;
   }
 
+  /* ===== 並べ替え ===== */
+  function rowEls() { return Array.prototype.slice.call(listEl.querySelectorAll(':scope > .row')); }
+
+  function initReorder(handle, wrap) {
+    handle.addEventListener('pointerdown', function (e) {
+      if (!features.order || orderSaving || e.button !== 0) return;
+      e.preventDefault();
+      // 行をDOM内で動かすとポインタキャプチャが外れるため、documentで追跡する
+      var pid = e.pointerId;
+      var before = rowEls();
+      wrap.classList.add('dragging');
+      document.body.classList.add('is-dragging');
+      var scrollTimer = null, lastY = e.clientY;
+
+      function place(clientY) {
+        var others = rowEls().filter(function (r) { return r !== wrap; });
+        for (var i = 0; i < others.length; i++) {
+          var rect = others[i].getBoundingClientRect();
+          if (clientY < rect.top + rect.height / 2) {
+            if (wrap.nextElementSibling !== others[i]) listEl.insertBefore(wrap, others[i]);
+            return;
+          }
+        }
+        if (listEl.lastElementChild !== wrap) listEl.appendChild(wrap);
+      }
+      function autoScroll() {
+        var edge = 70, speed = 0;
+        if (lastY < edge) speed = -Math.ceil((edge - lastY) / 5);
+        else if (lastY > window.innerHeight - edge) speed = Math.ceil((lastY - (window.innerHeight - edge)) / 5);
+        if (speed) { window.scrollBy(0, speed); place(lastY); }
+        scrollTimer = requestAnimationFrame(autoScroll);
+      }
+      scrollTimer = requestAnimationFrame(autoScroll);
+
+      function move(ev) { if (ev.pointerId !== pid) return; lastY = ev.clientY; place(ev.clientY); }
+      function up(ev) {
+        if (ev.pointerId !== pid) return;
+        cancelAnimationFrame(scrollTimer);
+        wrap.classList.remove('dragging');
+        document.body.classList.remove('is-dragging');
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', up);
+        document.removeEventListener('pointercancel', up);
+        var after = rowEls();
+        var changed = after.some(function (r, i) { return r !== before[i]; });
+        if (changed) saveOrder();
+      }
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up);
+      document.addEventListener('pointercancel', up);
+    });
+
+    var keyTimer = null;
+    handle.addEventListener('keydown', function (e) {
+      if (!features.order || orderSaving) return;
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      if (e.key === 'ArrowUp' && wrap.previousElementSibling) {
+        listEl.insertBefore(wrap, wrap.previousElementSibling);
+      } else if (e.key === 'ArrowDown' && wrap.nextElementSibling) {
+        listEl.insertBefore(wrap.nextElementSibling, wrap);
+      } else {
+        return;
+      }
+      handle.focus();
+      clearTimeout(keyTimer);
+      keyTimer = setTimeout(saveOrder, 700);
+    });
+  }
+
+  async function saveOrder() {
+    var changes = [];
+    rowEls().forEach(function (w, i) {
+      var n = (i + 1) * 10;
+      if (Number(w._row[COL_ORDER]) !== n || w._row[COL_ORDER] === null) changes.push({ row: w._row, n: n });
+    });
+    if (!changes.length) return;
+    orderSaving = true;
+    listEl.querySelectorAll('.handle').forEach(function (h) { h.disabled = true; });
+    var active = document.activeElement;
+    try {
+      await Promise.all(changes.map(function (c) {
+        var payload = {};
+        payload[COL_ORDER] = c.n;
+        return patchRow(c.row, payload).then(function (u) { c.row[COL_ORDER] = u[COL_ORDER]; });
+      }));
+      showToast('☑並び順を保存しました');
+    } catch (err) {
+      showToast('並び順の保存に失敗しました：' + err.message, true);
+      loadSection();
+    } finally {
+      orderSaving = false;
+      listEl.querySelectorAll('.handle').forEach(function (h) { h.disabled = false; });
+      if (active && active.classList && active.classList.contains('handle') && document.contains(active)) active.focus();
+    }
+  }
+
+  /* ===== 読み込み ===== */
+  function showSetupNotice() {
+    var missing = [];
+    if (!features.order) missing.push('並び順（' + COL_ORDER + ' 列）');
+    if (!features.style) missing.push('位置（' + COL_STYLE + ' 列）');
+    noticeEl.hidden = missing.length === 0;
+    noticeEl.textContent = missing.length
+      ? missing.join('と') + 'を保存するには、Supabaseのテーブルに列の追加が必要です。設定手順（cms-setup.md）をご確認ください。'
+      : '';
+  }
+
   async function loadSection() {
     var section = selectEl.value;
     listEl.textContent = '';
+    hintEl.hidden = true;
+    noticeEl.hidden = true;
     if (!section) {
       setStatus('セクションを選択してください。');
       return;
@@ -430,6 +1258,11 @@
         setStatus('このセクションにはデータがありません。');
         return;
       }
+      features.order = COL_ORDER in rows[0];
+      features.style = COL_STYLE in rows[0];
+      listEl.classList.toggle('can-reorder', features.order && rows.length > 1);
+      hintEl.hidden = !(features.order && rows.length > 1);
+      showSetupNotice();
       setStatus('');
       rows.forEach(function (r) { listEl.appendChild(renderRow(r)); });
     } catch (err) {
@@ -464,6 +1297,8 @@
     loginEl.hidden = false;
     pwEl.value = '';
     listEl.textContent = '';
+    noticeEl.hidden = true;
+    hintEl.hidden = true;
     pwEl.focus();
   }
 
