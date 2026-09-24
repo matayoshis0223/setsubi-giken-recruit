@@ -790,47 +790,45 @@
   </section>
   <!-- SECTION 08 END -->
 
-  <!-- SECTION 09 START -->
+  <!-- SECTION 09 START
+       上：代表メッセージ＋顔写真／下：専務メッセージ＋顔写真。
+       背景には画像を使わず、文字はすべてHTMLのテキストとして表示します。
+       本文は1行ずつ改行せず、文として自然に折り返すよう <span> でつないでいます（data-content-key はそのまま）。 -->
   <section class="message-section" id="section-09" aria-labelledby="section-09-title">
     <div class="message-section__inner">
       <p class="message-section__label" data-content-key="section09.label">SECTION 09</p>
       <h2 class="message-section__title" id="section-09-title" data-content-key="section09.title">代表・専務メッセージ</h2>
 
-      <div class="message-grid">
-        <article class="message-card message-card--primary">
-          <div class="message-card__banner"></div>
+      <div class="message-list">
+        <!-- 上部：代表取締役 -->
+        <article class="message-card message-card--president">
           <div class="message-card__copy">
             <p class="message-card__role" data-content-key="section09.left.role">代表取締役　平良 智より</p>
-            <h3 data-content-key="section09.left.heading">設備技研は、<br>常にチャレンジする<br>企業であり続けます。</h3>
+            <h3 class="message-card__heading" data-content-key="section09.left.heading">設備技研は、<br>常にチャレンジする<br>企業であり続けます。</h3>
             <div class="message-card__body">
-              <p data-content-key="section09.left.body01">創業以来34年、お客様・社員・関係者の皆さまに</p>
-              <p data-content-key="section09.left.body02">支えていただきながらここまで成長してきました。</p>
-              <p data-content-key="section09.left.body03">特に、可能性を秘めた若い人材の育成に力を入れています。</p>
-              <p data-content-key="section09.left.body04">お客様が満足し、安心して生活できる地域に貢献する——</p>
-              <p data-content-key="section09.left.body05">そのために、一緒に技術を磨いていただける方を</p>
-              <p data-content-key="section09.left.body06">求めています。</p>
+              <p><span data-content-key="section09.left.body01">創業以来34年、お客様・社員・関係者の皆さまに</span><span data-content-key="section09.left.body02">支えていただきながらここまで成長してきました。</span></p>
+              <p><span data-content-key="section09.left.body03">特に、可能性を秘めた若い人材の育成に力を入れています。</span></p>
+              <p><span data-content-key="section09.left.body04">お客様が満足し、安心して生活できる地域に貢献する——</span><span data-content-key="section09.left.body05">そのために、一緒に技術を磨いていただける方を</span><span data-content-key="section09.left.body06">求めています。</span></p>
             </div>
           </div>
-          <figure class="message-card__photo message-card__photo--left">
-            <img src="./assets/section-09/photos/president-message.webp" width="900" height="1200" alt="青い作業着を着て微笑む代表">
+          <figure class="message-card__photo">
+            <img src="./assets/section-09/photos/president-message.webp" width="900" height="1200" alt="青い作業着を着て微笑む代表取締役 平良 智" loading="lazy">
           </figure>
         </article>
 
-        <article class="message-card message-card--secondary">
+        <!-- 下部：専務取締役 -->
+        <article class="message-card message-card--executive">
           <div class="message-card__copy">
             <p class="message-card__role" data-content-key="section09.right.role">専務取締役　平良 淳より</p>
-            <h3 data-content-key="section09.right.heading">社員が幸せでない会社が、<br>周りの人を幸せにすることは<br>できない。</h3>
+            <h3 class="message-card__heading" data-content-key="section09.right.heading">社員が幸せでない会社が、<br>周りの人を幸せにすることは<br>できない。</h3>
             <div class="message-card__body">
-              <p data-content-key="section09.right.body01">これまでの建設業の「当たり前」を、</p>
-              <p data-content-key="section09.right.body02">私たちは変えようとしています。</p>
-              <p data-content-key="section09.right.body03">言いたいことが言えて、健やかに働ける</p>
-              <p data-content-key="section09.right.body04">職場をつくる。まだ道半ばですが、</p>
-              <p data-content-key="section09.right.body05">社員と一緒に改善を重ねています。</p>
-              <p data-content-key="section09.right.body06">あなたの力を、ここで発揮してほしい。</p>
+              <p><span data-content-key="section09.right.body01">これまでの建設業の「当たり前」を、</span><span data-content-key="section09.right.body02">私たちは変えようとしています。</span></p>
+              <p><span data-content-key="section09.right.body03">言いたいことが言えて、健やかに働ける</span><span data-content-key="section09.right.body04">職場をつくる。まだ道半ばですが、</span><span data-content-key="section09.right.body05">社員と一緒に改善を重ねています。</span></p>
+              <p><span data-content-key="section09.right.body06">あなたの力を、ここで発揮してほしい。</span></p>
             </div>
           </div>
-          <figure class="message-card__photo message-card__photo--right">
-            <img src="./assets/section-09/photos/executive-message.webp" width="900" height="1100" alt="青い作業着を着て微笑む専務取締役">
+          <figure class="message-card__photo">
+            <img src="./assets/section-09/photos/executive-message.webp" width="900" height="1100" alt="青い作業着を着て微笑む専務取締役 平良 淳" loading="lazy">
           </figure>
         </article>
       </div>

@@ -201,6 +201,10 @@
   .set-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; white-space: normal; }
   .set-card { border: 1px solid var(--blue-line); border-radius: 6px; padding: 8px 10px; background: var(--white); min-width: 0; }
   .set-no { display: block; font-size: .75rem; font-weight: 700; color: var(--blue-dark); margin-bottom: 4px; }
+  .set-field { display: block; font-size: .72rem; color: var(--muted); margin: 6px 0 2px; }
+  .set-no + .set-field { margin-top: 0; }
+  .set-text.strong { font-weight: 700; }
+  .row .editing-grid textarea[rows="2"] { min-height: 56px; }
   .set-text { display: block; white-space: pre-wrap; word-break: break-word; font-size: .92rem; line-height: 1.6; }
   .set-text.empty { color: var(--muted); font-style: italic; }
   .editing-grid { margin-top: 8px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
@@ -466,8 +470,11 @@
   var PAGE_URL = './index.html';
   // true にすると、ページ順ではなくドラッグでの手動並べ替えに戻る
   var MANUAL_ORDER = false;
-  // まとめて編集するカード（キーの末尾の番号を除いた部分を指定。例：section02.card01〜05）
+  // まとめて編集するカード
+  //  stem   … 1カード1項目。末尾の番号を除いたキー（例：section02.card01〜05）
+  //  prefix … 1カードに複数の項目。prefix + カード名 + '.' + 項目名（例：section01.benefit.beginner.title）
   var CARD_SETS = [
+    { prefix: 'section01.benefit.', name: 'カード', fields: { title: '見出し', body: '説明' } },
     { stem: 'section02.card', name: 'カード' }
   ];
 
@@ -694,6 +701,7 @@
       __list: !!meta.list,
       __set: !!meta.set,
       __setName: meta.name,
+      __fieldLabels: meta.fieldLabels || null,
       __firstKey: first[COL_KEY],
       __lastKey: last[COL_KEY]
     };
@@ -703,6 +711,14 @@
       ? members.map(function (m) { return brToNewline(valueText(m[COL_VALUE])); }).join('\n\n')
       : joinLines(members);
     if (COL_STYLE in first) g[COL_STYLE] = first[COL_STYLE];
+    if (meta.set) {
+      // カードごとに [項目の行…]（データが無い項目は null）
+      g.__cards = meta.cards.map(function (keys) {
+        return keys.map(function (k) {
+          return members.find(function (m) { return valueText(m[COL_KEY]) === k; }) || null;
+        });
+      }).filter(function (card) { return card.some(Boolean); });
+    }
     return g;
   }
 
@@ -810,13 +826,31 @@
       g.keys.forEach(function (k) { groupOf[k] = g; });
     });
     // カードのまとまり（ページ上の順番どおり）
+    var esc = function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
+    var byPos = function (a, b) { return index[a] - index[b]; };
     CARD_SETS.forEach(function (c) {
-      var re = new RegExp('^' + c.stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\d+$');
-      var setKeys = Object.keys(index).filter(function (k) { return re.test(k); })
-        .sort(function (a, b) { return index[a] - index[b]; });
-      if (setKeys.length < 2) return;
-      var g = { keys: setKeys, set: true, name: c.name || '項目' };
-      setKeys.forEach(function (k) { groupOf[k] = g; });
+      var cards = [], fieldLabels = null;
+      if (c.stem) {
+        var re = new RegExp('^' + esc(c.stem) + '\\d+$');
+        cards = Object.keys(index).filter(function (k) { return re.test(k); }).sort(byPos)
+          .map(function (k) { return [k]; });
+      } else if (c.prefix && c.fields) {
+        var names = Object.keys(c.fields);
+        fieldLabels = names.map(function (n) { return c.fields[n]; });
+        var reP = new RegExp('^' + esc(c.prefix) + '([^.]+)\\.(' + names.map(esc).join('|') + ')$');
+        var ids = [];
+        Object.keys(index).sort(byPos).forEach(function (k) {
+          var m = reP.exec(k);
+          if (m && ids.indexOf(m[1]) === -1) ids.push(m[1]);
+        });
+        cards = ids.map(function (id) {
+          return names.map(function (n) { return c.prefix + id + '.' + n; });
+        });
+      }
+      var keys = [].concat.apply([], cards).filter(function (k) { return k in index; });
+      if (cards.length < 2 || !keys.length) return;
+      var g = { keys: keys, cards: cards, fieldLabels: fieldLabels, set: true, name: c.name || '項目' };
+      keys.forEach(function (k) { groupOf[k] = g; });
     });
     return { index: index, titles: titles || {}, groupOf: groupOf, live: live };
   }
@@ -1108,7 +1142,11 @@
 
     var labelEl = el('div', 'label');
     labelEl.appendChild(el('span', null, labelStr));
-    if (row.__group) {
+    if (row.__set && row.__fieldLabels) {
+      var fk = valueText(row.__firstKey).split('.'), lk = valueText(row.__lastKey).split('.'), common = [];
+      for (var ci = 0; ci < fk.length && fk[ci] === lk[ci]; ci++) common.push(fk[ci]);
+      labelEl.appendChild(el('span', 'key', common.join('.') + '.*'));
+    } else if (row.__group) {
       labelEl.appendChild(el('span', 'key', valueText(row.__firstKey) + ' 〜 ' + valueText(row.__lastKey).split('.').pop()));
     } else if (row[COL_KEY]) {
       labelEl.appendChild(el('span', 'key', valueText(row[COL_KEY])));
@@ -1130,7 +1168,7 @@
 
     function showTags() {
       tagsEl.textContent = '';
-      if (row.__set) tagsEl.appendChild(el('span', 'tag', row.__group.length + '枚の' + row.__setName));
+      if (row.__set) tagsEl.appendChild(el('span', 'tag', row.__cards.length + '枚の' + row.__setName));
       else if (row.__group) tagsEl.appendChild(el('span', 'tag', row.__list ? row.__group.length + '項目の箇条書き' : row.__group.length + '行の文章'));
       if (isImageRow(row)) tagsEl.appendChild(el('span', 'tag', '画像'));
       if (COL_KEY in row && keyPos(row[COL_KEY]) === null) tagsEl.appendChild(el('span', 'tag warn', 'ページ未使用'));
@@ -1143,12 +1181,15 @@
         valueEl.textContent = '';
         valueEl.className = 'value';
         var grid = el('div', 'set-grid');
-        row.__group.forEach(function (m, i) {
+        row.__cards.forEach(function (cardRows, i) {
           var card = el('div', 'set-card');
           card.appendChild(el('span', 'set-no', row.__setName + (i + 1)));
-          var t = brToNewline(valueText(m[COL_VALUE]));
-          var body = el('span', 'set-text' + (t ? '' : ' empty'), t || '（未入力）');
-          card.appendChild(body);
+          cardRows.forEach(function (m, f) {
+            if (!m) return;
+            if (row.__fieldLabels) card.appendChild(el('span', 'set-field', row.__fieldLabels[f]));
+            var t = brToNewline(valueText(m[COL_VALUE]));
+            card.appendChild(el('span', 'set-text' + (t ? '' : ' empty') + (f === 0 && row.__fieldLabels ? ' strong' : ''), t || '（未入力）'));
+          });
           grid.appendChild(card);
         });
         valueEl.appendChild(grid);
@@ -1186,20 +1227,29 @@
       valueEl.textContent = '';
       valueEl.appendChild(el('p', 'line-help', '各' + row.__setName + 'の文字をまとめて編集できます。改行した位置が、' + row.__setName + '内の改行になります。'));
       var grid = el('div', 'set-grid editing-grid');
-      var areas = row.__group.map(function (m, i) {
+      // 保存は row.__group の順で行うため、各行に対応する入力欄を記録する
+      var areaOf = new Map();
+      row.__cards.forEach(function (cardRows, i) {
         var box = el('div', 'set-card');
-        var id = 'set-' + Math.random().toString(36).slice(2, 8);
-        var lb = el('label', 'set-no', row.__setName + (i + 1));
-        lb.htmlFor = id;
-        var ta = el('textarea');
-        ta.id = id;
-        ta.rows = 4;
-        ta.value = brToNewline(valueText(m[COL_VALUE]));
-        box.appendChild(lb);
-        box.appendChild(ta);
+        var no = row.__setName + (i + 1);
+        if (row.__fieldLabels) box.appendChild(el('span', 'set-no', no));
+        cardRows.forEach(function (m, f) {
+          if (!m) return;
+          var id = 'set-' + Math.random().toString(36).slice(2, 8);
+          var lb = el('label', row.__fieldLabels ? 'set-field' : 'set-no', row.__fieldLabels ? row.__fieldLabels[f] : no);
+          lb.htmlFor = id;
+          var ta = el('textarea');
+          ta.id = id;
+          ta.rows = row.__fieldLabels ? 2 : 4;
+          ta.value = brToNewline(valueText(m[COL_VALUE]));
+          if (row.__fieldLabels) ta.setAttribute('aria-label', no + 'の' + row.__fieldLabels[f]);
+          box.appendChild(lb);
+          box.appendChild(ta);
+          areaOf.set(m, ta);
+        });
         grid.appendChild(box);
-        return ta;
       });
+      var areas = row.__group.map(function (m) { return areaOf.get(m); });
       valueEl.appendChild(grid);
 
       var saveBtn = button('まとめて保存');
