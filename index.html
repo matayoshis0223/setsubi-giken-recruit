@@ -232,6 +232,79 @@
   }
 }
   </style>
+
+  <!-- =========================================================
+       改行（折り返し）の見栄え調整
+       ・単語の途中で折り返さない（「だけでい／い。」のような分断を防ぐ）
+       ・1文字だけ次の行に残る「泣き別れ」を防ぐ
+       ・すべての css/sections/*.css より後に読み込み、こちらを優先します
+       ========================================================= -->
+  <style>
+  /* 文節ごとのまとまり（JSで自動付与）。1行に収まらないほど長い場合だけ中で折り返します */
+  .jp-phrase {
+    display: inline-block;
+    max-width: 100%;
+  }
+
+  /* 見出し・キャッチコピー：文節単位で折り返し、行の長さを揃える */
+  h1, h2, h3,
+  .intro__lead,
+  .voices-section__note,
+  .voice-card__catch,
+  .history-section__lead,
+  .background-summary p,
+  .background-summary__script,
+  .faq-honest__lead,
+  .entry-section__sub,
+  .entry-section__body p,
+  .entry-form__head p,
+  .entry-form__badge,
+  .site-footer__message,
+  .fit-card p {
+    line-break: strict;           /* 「。」「ー」「ゃ」などを行頭に置かない */
+    word-break: auto-phrase;      /* Chrome/Edge：文節で折り返す（未対応ブラウザはJSで補完） */
+    overflow-wrap: anywhere;      /* 万一はみ出す場合の保険 */
+    text-wrap: balance;           /* 行の長さを揃え、最終行に1〜2文字だけ残るのを防ぐ */
+  }
+
+  /* 本文：最終行の1文字残りを防ぐ */
+  p, li, dd, small {
+    line-break: strict;
+    text-wrap: pretty;
+  }
+
+  /* ---------- SECTION 12：大見出しのサイズ調整 ----------
+     「話を聞いてみる」（7文字）が1行に収まる大きさに抑え、
+     右側の写真と重ならないようにします */
+  .entry-section__copy {
+    position: relative;
+    z-index: 2;
+  }
+  .entry-section__title {
+    font-size: clamp(34px, 6.2vw, 64px);
+    line-height: 1.25;
+    letter-spacing: 0.02em;
+  }
+  .entry-section__photo img {
+    object-fit: cover;
+    object-position: 30% 20%;     /* 写真右端の白い余白が見えにくい位置に寄せる */
+  }
+
+  @media (max-width: 960px) {
+    .entry-section__title {
+      font-size: clamp(32px, 7.2vw, 52px);
+    }
+  }
+  @media (max-width: 700px) {
+    .entry-section__title {
+      font-size: clamp(30px, 8.6vw, 42px);
+      line-height: 1.3;
+    }
+    .entry-section__body p {
+      font-size: clamp(14px, 3.9vw, 16px);
+    }
+  }
+  </style>
 </head>
 <body>
 <main class="lp">
@@ -1299,6 +1372,100 @@
   <!-- LP CONTENT END -->
 </main>
   <script src="./js/main.js" defer></script>
+  <!-- 改行の見栄え調整：日本語の見出しを文節ごとに <span class="jp-phrase"> で包み、
+       単語の途中で改行されないようにします（Safari・Firefox でも有効）。 -->
+  <script>
+  (function () {
+    var TARGETS = [
+      'h1', 'h2', 'h3',
+      '.intro__lead', '.voices-section__note', '.voice-card__catch',
+      '.history-section__lead', '.background-summary p', '.background-summary__script',
+      '.faq-honest__lead', '.entry-section__sub', '.entry-section__body p',
+      '.entry-form__head p', '.entry-form__badge', '.site-footer__message', '.fit-card p'
+    ].join(',');
+
+    var JP = /[\u3040-\u30ff\u3400-\u9fff]/;
+    var HIRA_START = /^[\u3041-\u309f]/;               // ひらがなで始まる
+    var HIRA_END = /[\u3041-\u309f]$/;                 // ひらがなで終わる
+    var ATTACH = /^[、。，．！？!?,.」』）)】〕〉》ー〜～…：:；;\s]*$/; // 前にくっつける記号
+    var OPEN_END = /[「『（(【〔〈《]$/;                 // 開き括弧で終わる
+    var BREAK_END = /[、。，．！？!?・／]$/;              // ここで区切ってよい
+    var CLOSE_END = /[」』）)】〕〉》]$/;                // 閉じ括弧で終わる
+    var PARTICLES = /^(は|が|を|に|と|も|の|へ|や|から|まで|より|ね|よ)$/;
+
+    var segmenter = (window.Intl && Intl.Segmenter) ? new Intl.Segmenter('ja', { granularity: 'word' }) : null;
+
+    // テキストを文節の配列に分ける
+    function toPhrases(text) {
+      var segs = Array.from(segmenter.segment(text), function (s) { return s.segment; });
+      var phrases = [];
+      var cur = '';
+      var prev = '';
+      segs.forEach(function (seg) {
+        var startNew;
+        if (/^\s+$/.test(seg)) { if (cur) phrases.push(cur); phrases.push(seg); cur = ''; prev = seg; return; }
+        if (!cur) startNew = false;
+        else if (ATTACH.test(seg) || OPEN_END.test(cur)) startNew = false;
+        else if (/^[「『（(【〔〈《]/.test(seg)) startNew = true;
+        else if (HIRA_START.test(seg)) startNew = (PARTICLES.test(prev) && cur.replace(/^[「『（(【〔〈《]+/, '') !== prev) || BREAK_END.test(cur); // 助詞の後なら新しい文節
+        else startNew = HIRA_END.test(cur) || BREAK_END.test(cur) || CLOSE_END.test(cur);                             // 漢字・カタカナ・数字の連続はつなげる
+        if (startNew) { phrases.push(cur); cur = ''; }
+        cur += seg;
+        prev = seg;
+      });
+      if (cur) phrases.push(cur);
+      return mergeShortBrackets(phrases);
+    }
+
+    // 「やってみたい」【できる人】のような短い括弧内は、ひとかたまりにする
+    function mergeShortBrackets(phrases) {
+      var out = [];
+      for (var i = 0; i < phrases.length; i++) {
+        var p = phrases[i];
+        if (/^[「『（(【〔〈《]/.test(p) && !/[」』）)】〕〉》]/.test(p)) {
+          var buf = p, j = i + 1;
+          while (j < phrases.length && !/[」』）)】〕〉》]/.test(buf)) { buf += phrases[j]; j++; }
+          if (/[」』）)】〕〉》]/.test(buf) && buf.replace(/[「『（(【〔〈《」』）)】〕〉》、。！？]/g, '').length <= 8) {
+            out.push(buf); i = j - 1; continue;
+          }
+        }
+        out.push(p);
+      }
+      return out;
+    }
+
+    function wrapTextNode(node) {
+      var text = node.nodeValue;
+      if (!JP.test(text)) return;
+      var phrases = toPhrases(text);
+      if (phrases.length < 2) return;
+      var frag = document.createDocumentFragment();
+      phrases.forEach(function (p) {
+        if (/^\s+$/.test(p)) { frag.appendChild(document.createTextNode(p)); return; }
+        var span = document.createElement('span');
+        span.className = 'jp-phrase';
+        span.textContent = p;
+        frag.appendChild(span);
+      });
+      node.parentNode.replaceChild(frag, node);
+    }
+
+    function wrapElement(el) {
+      if (el.querySelector('.jp-phrase')) return; // 処理済み
+      var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+      var nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(wrapTextNode);
+    }
+
+    window.applyJpPhrases = function () {
+      if (!segmenter) return; // 古いブラウザは CSS の設定のみで対応
+      document.querySelectorAll(TARGETS).forEach(wrapElement);
+    };
+
+    window.applyJpPhrases();
+  })();
+  </script>
   <!-- Supabase接続：site_content テーブルの内容を data-content-key の要素に反映 -->
   <script>
   (function () {
@@ -1357,7 +1524,10 @@
       }
     }
 
-    loadSiteContent();
+    // 読み込み後（テキストが差し替わった後）に、改行の見栄え調整をかけ直す
+    loadSiteContent().then(function () {
+      if (window.applyJpPhrases) window.applyJpPhrases();
+    });
   })();
   </script>
 </body>
