@@ -197,6 +197,8 @@
     background: var(--blue-light);
     color: var(--blue-dark);
   }
+  .row .label .key { display: block; font-weight: 400; font-size: .75rem; color: var(--muted); word-break: break-all; }
+  .tag.warn { background: var(--note-bg); color: #8A5A00; }
   .row .value { white-space: pre-wrap; word-break: break-word; min-width: 0; }
   .row .value.empty { color: var(--muted); font-style: italic; }
   .row .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -449,6 +451,117 @@
   var COL_ID = 'id';
   var COL_ORDER = 'sort_order'; // 並び順（integer）。列が無ければ並べ替えは無効になる
   var COL_STYLE = 'style';      // 位置情報（jsonb）。列が無ければ位置調整は無効になる
+  var COL_KEY = 'content_key';  // index.html の data-content-key と対応する列
+
+  // 並び順の基準にする公開ページ。CMSと同じサーバーにあれば、毎回最新の順番を読み取る
+  var PAGE_URL = './index.html';
+  // true にすると、ページ順ではなくドラッグでの手動並べ替えに戻る
+  var MANUAL_ORDER = false;
+
+  // index.html の順番（data-content-key を上から順に並べたもの）。
+  // PAGE_URL から最新の index.html を読めなかった場合に使います。
+  var PAGE_DEFAULT = {
+    titles: {
+      "section01": "工具の名前も知らなかった人が、ここでは【できる人】になる。",
+      "section02": "ひとつでも当てはまれば、まず話を聞きに来てください。",
+      "section03": "設備技研はここが凄い！働きやすさの改善に本気で取り組んでいます",
+      "section04": "どんな仕事をするの？",
+      "section05": "入社したら、どんな1日を過ごすの？",
+      "section06": "先輩たちのリアルな声",
+      "section07": "求人情報詳細",
+      "section08": "会社の歩み",
+      "section09": "代表・専務メッセージ",
+      "section10": "こんなバックグラウンドの先輩が働いています",
+      "section11": "正直に言います。これが設備技研のホンネです。",
+      "section12": "まずは、話を聞いてみるだけでいい。",
+      "footer": "フッター"
+    },
+    keys: [
+    "section01.label", "section01.lead", "section01.title.line01", "section01.title.line02",
+    "section01.title.line03", "section01.title.line04", "section01.body.line01", "section01.body.line02",
+    "section01.body.line03", "section01.body.line04", "section01.benefit.beginner.title",
+    "section01.benefit.beginner.body", "section01.benefit.interview.title",
+    "section01.benefit.interview.body", "section01.benefit.salary.title", "section01.benefit.salary.body",
+    "section02.label", "section02.title.line01", "section02.title.line02", "section02.card01",
+    "section02.card02", "section02.card03", "section02.card04", "section02.card05",
+    "section02.reassurance.line01", "section02.reassurance.line02", "section03.label",
+    "section03.title.line01", "section03.title.line02", "section03.title.line03", "section03.reason01.title",
+    "section03.reason01.body01", "section03.reason01.body02", "section03.reason01.body03",
+    "section03.reason01.body04", "section03.reason01.body05", "section03.reason02.title",
+    "section03.reason02.body01", "section03.reason02.body02", "section03.reason02.body03",
+    "section03.reason02.body04", "section03.reason02.body05", "section03.reason02.body06",
+    "section03.reason03.title", "section03.reason03.body01", "section03.reason03.body02",
+    "section03.reason03.body03", "section03.reason03.body04", "section03.reason03.body05",
+    "section03.reason03.body06", "section03.reason04.title", "section03.reason04.body01",
+    "section03.reason04.body02", "section03.reason04.body03", "section03.reason04.body04",
+    "section03.reason05.title", "section03.reason05.body01", "section03.reason05.body02",
+    "section03.reason05.body03", "section04.label", "section04.title", "section04.job01.title",
+    "section04.job01.body01", "section04.job01.body02", "section04.job01.body03", "section04.job01.body04",
+    "section04.job01.body05", "section04.job01.body06", "section04.job01.body07", "section04.job01.body08",
+    "section04.job02.title", "section04.job02.body01", "section04.job02.body02", "section04.job02.body03",
+    "section04.job02.body04", "section04.job02.body05", "section04.job02.body06", "section04.job03.title",
+    "section04.job03.body01", "section04.job03.body02", "section04.job03.body03", "section04.job03.body04",
+    "section04.job03.body05", "section04.job03.body06", "section04.job04.title", "section04.job04.body01",
+    "section04.job04.body02", "section04.job04.body03", "section04.job04.body04", "section04.job04.body05",
+    "section04.job05.title", "section04.job05.body01", "section04.job05.body02", "section04.job05.body03",
+    "section05.label", "section05.title", "section05.manager.heading", "section05.manager.0800.title",
+    "section05.manager.0800.body01", "section05.manager.0800.body02", "section05.manager.0830.title",
+    "section05.manager.0830.body01", "section05.manager.0830.body02", "section05.manager.0830.body03",
+    "section05.manager.1200.title", "section05.manager.1200.body01", "section05.manager.1300.title",
+    "section05.manager.1300.body01", "section05.manager.1330.title", "section05.manager.1700.title",
+    "section05.manager.1700.body01", "section05.craftsman.heading", "section05.craftsman.0800.title",
+    "section05.craftsman.0830.title", "section05.craftsman.0830.body01", "section05.craftsman.1000.title",
+    "section05.craftsman.1000.body01", "section05.craftsman.1200.title", "section05.craftsman.1300.title",
+    "section05.craftsman.1330.title", "section05.craftsman.1500.title", "section05.craftsman.1730.title",
+    "section05.craftsman.1730.body01", "section06.label", "section06.title.line01", "section06.title.line02",
+    "section06.note", "section06.voice01.name", "section06.voice01.catch", "section06.voice01.body01",
+    "section06.voice01.body02", "section06.voice01.body03", "section06.voice02.name",
+    "section06.voice02.catch", "section06.voice02.body01", "section06.voice02.body02",
+    "section06.voice02.body03", "section07.label", "section07.title", "section07.jobtype.title",
+    "section07.jobtype.line01", "section07.jobtype.line02", "section07.employment.title",
+    "section07.employment.line01", "section07.salary.title", "section07.salary.line01",
+    "section07.salary.line02", "section07.salary.note", "section07.hours.title", "section07.hours.line01",
+    "section07.requirements.title", "section07.requirements.required.heading",
+    "section07.requirements.required.age", "section07.requirements.required.license",
+    "section07.requirements.welcome.heading", "section07.requirements.welcome.01",
+    "section07.requirements.welcome.02", "section07.requirements.welcome.03",
+    "section07.requirements.welcome.04", "section07.requirements.welcome.05",
+    "section07.requirements.welcome.06", "section07.requirements.welcome.07",
+    "section07.requirements.welcome.08", "section07.holidays.title", "section07.holidays.01",
+    "section07.holidays.02", "section07.holidays.03", "section07.holidays.note", "section07.location.title",
+    "section07.location.line01", "section07.location.note", "section07.benefits.title",
+    "section07.benefits.01", "section07.benefits.02", "section07.benefits.03", "section07.benefits.04",
+    "section07.benefits.05", "section07.benefits.06", "section08.label", "section08.title", "section08.lead",
+    "section08.history.heading", "section08.history.1992", "section08.history.1997", "section08.history.2000",
+    "section08.history.2003", "section08.history.2007", "section08.history.2009", "section08.history.2026",
+    "section09.label", "section09.title", "section09.left.role", "section09.left.heading",
+    "section09.left.body01", "section09.left.body02", "section09.left.body03", "section09.left.body04",
+    "section09.left.body05", "section09.left.body06", "section09.right.role", "section09.right.heading",
+    "section09.right.body01", "section09.right.body02", "section09.right.body03", "section09.right.body04",
+    "section09.right.body05", "section09.right.body06", "section09.closing", "section10.label",
+    "section10.eyebrow", "section10.title", "section10.card01.title", "section10.card01.item01",
+    "section10.card01.item02", "section10.card01.item03", "section10.card01.item04",
+    "section10.card01.item05", "section10.card01.item06", "section10.card02.title", "section10.card02.item01",
+    "section10.card02.item02", "section10.card03.title", "section10.card03.item01", "section10.summary",
+    "section10.script", "section11.label", "section11.sub", "section11.title.line01",
+    "section11.title.line02", "section11.lead", "section11.point01.title", "section11.point01.body01",
+    "section11.point01.body02", "section11.point01.body03", "section11.point01.body04",
+    "section11.point01.body05", "section11.point01.body06", "section11.point02.title",
+    "section11.point02.body01", "section11.point02.body02", "section11.point02.body03",
+    "section11.point02.body04", "section11.point02.body05", "section11.point02.body06",
+    "section11.point02.body07", "section11.point02.body08", "section11.point03.title",
+    "section11.point03.body01", "section11.point03.body02", "section11.point03.body03",
+    "section11.point03.body04", "section11.point03.body05", "section11.point03.body06",
+    "section11.point03.body07", "section11.point04.title", "section11.point04.body01",
+    "section11.point04.body02", "section11.point04.body03", "section11.point04.body04",
+    "section11.point04.body05", "section11.point04.body06", "section11.point04.body07",
+    "section11.point04.body08", "section11.faq.heading", "section11.faq.note", "section11.faq01.q",
+    "section11.faq01.a", "section11.faq02.q", "section11.faq02.a", "section11.faq03.q", "section11.faq03.a",
+    "section12.label", "section12.sub", "section12.title", "section12.body01", "section12.body02",
+    "section12.body03", "section12.body04", "section12.body05", "section12.form.title", "section12.form.lead",
+    "section12.form.badge", "section12.form.submit", "footer.message"
+    ]
+  };
 
   // 画像の保存先（Supabase Storage の公開バケット名）
   var STORAGE_BUCKET = 'cms-images';
@@ -520,6 +633,86 @@
       throw new Error('更新できませんでした。SupabaseのRLS（UPDATEポリシー）を確認してください。');
     }
     return body[0];
+  }
+
+  /* ===== ページ（index.html）の順番 ===== */
+  var pageOrder = buildPageOrder(PAGE_DEFAULT.keys, PAGE_DEFAULT.titles, false);
+
+  function buildPageOrder(keys, titles, live) {
+    var index = Object.create(null);
+    keys.forEach(function (k, i) { if (!(k in index)) index[k] = i; });
+    return { index: index, titles: titles || {}, live: live };
+  }
+
+  // index.html を読み込み、data-content-key の出現順とセクション見出しを取得する
+  async function loadPageOrder() {
+    if (!PAGE_URL) return;
+    try {
+      var res = await fetch(PAGE_URL, { cache: 'no-cache' });
+      if (!res.ok) return;
+      var doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+      var keys = Array.prototype.map.call(doc.querySelectorAll('[data-content-key]'), function (e) {
+        return e.getAttribute('data-content-key');
+      });
+      if (!keys.length) return;
+      var titles = { footer: 'フッター' };
+      doc.querySelectorAll('section[id]').forEach(function (sec) {
+        var m = /^section-(\d+)$/.exec(sec.id);
+        if (!m) return;
+        var h = (sec.getAttribute('aria-labelledby') && doc.getElementById(sec.getAttribute('aria-labelledby'))) ||
+                sec.querySelector('h1, h2');
+        if (h) titles['section' + m[1]] = h.textContent.replace(/\s+/g, '');
+      });
+      pageOrder = buildPageOrder(keys, titles, true);
+    } catch (e) {
+      // 読めない場合（ローカルで開いている等）は埋め込みの順番を使う
+    }
+  }
+
+  function keyPos(key) {
+    if (key === null || key === undefined) return null;
+    var p = pageOrder.index[String(key)];
+    return p === undefined ? null : p;
+  }
+  function comparePos(a, b) {
+    if (a === b) return 0;
+    if (a === null) return 1;
+    if (b === null) return -1;
+    return a - b;
+  }
+  // ページ上の順番に並べる（ページに無い項目は末尾、元の順番のまま）
+  function sortRowsByPage(rows) {
+    return rows
+      .map(function (r, i) { return { r: r, i: i, p: keyPos(r[COL_KEY]) }; })
+      .sort(function (a, b) { return comparePos(a.p, b.p) || a.i - b.i; })
+      .map(function (x) { return x.r; });
+  }
+  function titleFor(sectionName, firstKey) {
+    if (firstKey) {
+      var t = pageOrder.titles[String(firstKey).split('.')[0]];
+      if (t) return t;
+    }
+    var m = /^section-?(\d+)$/.exec(sectionName);
+    return m ? (pageOrder.titles['section' + m[1]] || '') : '';
+  }
+
+  // DB内のセクション一覧を、ページ上で最初に出てくる位置の順に並べて返す
+  async function fetchSections() {
+    var res = await fetch(endpoint('select=' + COL_SECTION + ',' + COL_KEY), { headers: headers() });
+    if (res.status === 400) res = await fetch(endpoint('select=' + COL_SECTION), { headers: headers() });
+    var body = await res.json().catch(function () { return null; });
+    if (!res.ok) throw new Error(errorText(res, body));
+    var info = Object.create(null);
+    (body || []).forEach(function (r) {
+      if (r[COL_SECTION] === null || r[COL_SECTION] === undefined) return;
+      var name = String(r[COL_SECTION]);
+      var inf = info[name] || (info[name] = { name: name, pos: null, key: null });
+      var p = keyPos(r[COL_KEY]);
+      if (p !== null && (inf.pos === null || p < inf.pos)) { inf.pos = p; inf.key = r[COL_KEY]; }
+    });
+    return Object.keys(info).map(function (k) { return info[k]; }).sort(function (a, b) {
+      return comparePos(a.pos, b.pos) || a.name.localeCompare(b.name, 'ja', { numeric: true });
+    });
   }
 
   /* ===== 画像 ===== */
@@ -720,6 +913,7 @@
 
     var labelEl = el('div', 'label');
     labelEl.appendChild(el('span', null, labelStr));
+    if (row[COL_KEY]) labelEl.appendChild(el('span', 'key', valueText(row[COL_KEY])));
     var tagsEl = el('div', 'tags');
     labelEl.appendChild(tagsEl);
 
@@ -738,6 +932,7 @@
     function showTags() {
       tagsEl.textContent = '';
       if (isImageRow(row)) tagsEl.appendChild(el('span', 'tag', '画像'));
+      if (COL_KEY in row && keyPos(row[COL_KEY]) === null) tagsEl.appendChild(el('span', 'tag warn', 'ページ未使用'));
       if (features.style && !isDefaultStyle(getStyle(row))) tagsEl.appendChild(el('span', 'tag', '位置調整あり'));
       tagsEl.hidden = !tagsEl.firstChild;
     }
@@ -1232,7 +1427,7 @@
   /* ===== 読み込み ===== */
   function showSetupNotice() {
     var missing = [];
-    if (!features.order) missing.push('並び順（' + COL_ORDER + ' 列）');
+    if (MANUAL_ORDER && !features.order) missing.push('並び順（' + COL_ORDER + ' 列）');
     if (!features.style) missing.push('位置（' + COL_STYLE + ' 列）');
     noticeEl.hidden = missing.length === 0;
     noticeEl.textContent = missing.length
@@ -1258,7 +1453,8 @@
         setStatus('このセクションにはデータがありません。');
         return;
       }
-      features.order = COL_ORDER in rows[0];
+      rows = sortRowsByPage(rows);
+      features.order = MANUAL_ORDER && COL_ORDER in rows[0];
       features.style = COL_STYLE in rows[0];
       listEl.classList.toggle('can-reorder', features.order && rows.length > 1);
       hintEl.hidden = !(features.order && rows.length > 1);
@@ -1272,24 +1468,45 @@
   }
 
   /* ===== 初期化 ===== */
-  function buildSelect() {
+  function defaultSections() {
+    var list = [];
+    for (var i = 1; i <= 12; i++) list.push({ name: 'section-' + (i < 10 ? '0' + i : i), key: null });
+    return list;
+  }
+
+  function buildSelect(sections) {
+    var keep = selectEl.value;
     selectEl.textContent = '';
     var ph = el('option', null, 'セクションを選択');
     ph.value = '';
     selectEl.appendChild(ph);
-    for (var i = 1; i <= 12; i++) {
-      var v = 'section-' + (i < 10 ? '0' + i : i);
-      var o = el('option', null, v);
-      o.value = v;
+    sections.forEach(function (s) {
+      var t = titleFor(s.name, s.key);
+      if (t.length > 26) t = t.slice(0, 26) + '…';
+      var o = el('option', null, t ? s.name + '　' + t : s.name);
+      o.value = s.name;
       selectEl.appendChild(o);
+    });
+    if (keep && sections.some(function (s) { return s.name === keep; })) selectEl.value = keep;
+  }
+
+  // ページの順番とセクション一覧を読み直す
+  async function refreshSections() {
+    await loadPageOrder();
+    try {
+      var sections = await fetchSections();
+      buildSelect(sections.length ? sections : defaultSections());
+    } catch (err) {
+      buildSelect(defaultSections());
     }
   }
 
-  function enterApp() {
+  async function enterApp() {
     loginEl.hidden = true;
     appEl.hidden = false;
-    buildSelect();
+    buildSelect(defaultSections());
     setStatus('セクションを選択してください。');
+    await refreshSections();
   }
   function leaveApp() {
     try { sessionStorage.removeItem('cms_auth'); } catch (e) {}
@@ -1314,7 +1531,10 @@
     }
   });
   $('logoutBtn').addEventListener('click', leaveApp);
-  $('reloadBtn').addEventListener('click', loadSection);
+  $('reloadBtn').addEventListener('click', async function () {
+    await refreshSections();
+    loadSection();
+  });
   selectEl.addEventListener('change', loadSection);
 
   var authed = false;
