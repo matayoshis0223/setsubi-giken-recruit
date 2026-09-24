@@ -325,6 +325,29 @@
       font-size: clamp(14px, 3.9vw, 16px);
     }
   }
+  /* ---------- SECTION 12：連絡先カードのメールアドレスが切れないように ----------
+     ・カード内テキストが幅を縮められるよう min-width:0 を指定
+     ・省略表示（…）や非表示を解除し、アドレスは「@」の後で改行可能に
+     ・メールだけ文字サイズを少し抑え、なるべく1〜2行で収めます */
+  .entry-contact,
+  .entry-contact > span {
+    min-width: 0;
+  }
+  .entry-contact > span {
+    flex: 1 1 auto;
+    overflow: visible;
+  }
+  .entry-contact[href^="mailto:"] strong {
+    display: block;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: clamp(13px, 1.3vw, 17px);
+    line-height: 1.35;
+    letter-spacing: 0;
+    word-break: normal;
+    overflow-wrap: anywhere;   /* それでも収まらない極端に狭い幅での保険 */
+  }
   </style>
 </head>
 <body>
@@ -1357,7 +1380,7 @@
         <figure class="entry-section__photo"><img src="./assets/section-12/photos/entry-staff.webp" width="1000" height="1200" alt="笑顔で空を見上げる女性社員"></figure>
         <div class="entry-contacts">
           <a class="entry-contact" href="tel:0989341313"><img src="./assets/section-12/icons/phone.png" width="512" height="512" alt=""><span><strong>098-934-1313</strong><small>営業時間 8:00〜17:00<br>定休日: 土・日・祝</small></span></a>
-          <a class="entry-contact" href="mailto:soumu@setsuhi-giken.co.jp"><img src="./assets/section-12/icons/mail.png" width="512" height="512" alt=""><span><strong>soumu@setsuhi-giken.co.jp</strong></span></a>
+          <a class="entry-contact" href="mailto:soumu@setsuhi-giken.co.jp"><img src="./assets/section-12/icons/mail.png" width="512" height="512" alt=""><span><strong>soumu@<wbr>setsuhi-giken.co.jp</strong></span></a>
           <div class="entry-contact"><img src="./assets/section-12/icons/location.png" width="512" height="512" alt=""><span><strong>〒904-2172</strong><small>沖縄県沖縄市泡瀬1-10-13</small></span></div>
         </div>
       </div>
