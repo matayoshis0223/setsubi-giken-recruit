@@ -198,6 +198,8 @@
     color: var(--blue-dark);
   }
   .row .label .key { display: block; font-weight: 400; font-size: .75rem; color: var(--muted); word-break: break-all; }
+  .line-help { margin: 6px 0 0; font-size: .8rem; color: var(--muted); white-space: normal; }
+  .line-help.over { color: #8A5A00; background: var(--note-bg); border-radius: 4px; padding: 4px 8px; }
   .tag.warn { background: var(--note-bg); color: #8A5A00; }
   .row .value { white-space: pre-wrap; word-break: break-word; min-width: 0; }
   .row .value.empty { color: var(--muted); font-style: italic; }
@@ -476,6 +478,44 @@
       "section12": "まずは、話を聞いてみるだけでいい。",
       "footer": "フッター"
     },
+    // 同じ親要素の中で連番になっている行（例：body.line01〜04）を1つの文章としてまとめる
+    groups: [
+      {"list":false,"keys":["section01.title.line01","section01.title.line02","section01.title.line03","section01.title.line04"]},
+      {"list":false,"keys":["section01.body.line01","section01.body.line02","section01.body.line03","section01.body.line04"]},
+      {"list":false,"keys":["section02.title.line01","section02.title.line02"]},
+      {"list":false,"keys":["section02.reassurance.line01","section02.reassurance.line02"]},
+      {"list":false,"keys":["section03.title.line01","section03.title.line02","section03.title.line03"]},
+      {"list":false,"keys":["section03.reason01.body01","section03.reason01.body02","section03.reason01.body03","section03.reason01.body04","section03.reason01.body05"]},
+      {"list":false,"keys":["section03.reason02.body01","section03.reason02.body02","section03.reason02.body03","section03.reason02.body04","section03.reason02.body05","section03.reason02.body06"]},
+      {"list":false,"keys":["section03.reason03.body01","section03.reason03.body02","section03.reason03.body03","section03.reason03.body04","section03.reason03.body05","section03.reason03.body06"]},
+      {"list":false,"keys":["section03.reason04.body01","section03.reason04.body02","section03.reason04.body03","section03.reason04.body04"]},
+      {"list":false,"keys":["section03.reason05.body01","section03.reason05.body02","section03.reason05.body03"]},
+      {"list":false,"keys":["section04.job01.body01","section04.job01.body02","section04.job01.body03","section04.job01.body04","section04.job01.body05","section04.job01.body06","section04.job01.body07","section04.job01.body08"]},
+      {"list":false,"keys":["section04.job02.body01","section04.job02.body02","section04.job02.body03","section04.job02.body04","section04.job02.body05","section04.job02.body06"]},
+      {"list":false,"keys":["section04.job03.body01","section04.job03.body02","section04.job03.body03","section04.job03.body04","section04.job03.body05","section04.job03.body06"]},
+      {"list":false,"keys":["section04.job04.body01","section04.job04.body02","section04.job04.body03","section04.job04.body04","section04.job04.body05"]},
+      {"list":false,"keys":["section04.job05.body01","section04.job05.body02","section04.job05.body03"]},
+      {"list":false,"keys":["section05.manager.0800.body01","section05.manager.0800.body02"]},
+      {"list":false,"keys":["section05.manager.0830.body01","section05.manager.0830.body02","section05.manager.0830.body03"]},
+      {"list":false,"keys":["section06.title.line01","section06.title.line02"]},
+      {"list":false,"keys":["section06.voice01.body01","section06.voice01.body02","section06.voice01.body03"]},
+      {"list":false,"keys":["section06.voice02.body01","section06.voice02.body02","section06.voice02.body03"]},
+      {"list":false,"keys":["section07.jobtype.line01","section07.jobtype.line02"]},
+      {"list":false,"keys":["section07.salary.line01","section07.salary.line02"]},
+      {"list":true,"keys":["section07.requirements.welcome.01","section07.requirements.welcome.02","section07.requirements.welcome.03","section07.requirements.welcome.04","section07.requirements.welcome.05","section07.requirements.welcome.06","section07.requirements.welcome.07","section07.requirements.welcome.08"]},
+      {"list":true,"keys":["section07.holidays.01","section07.holidays.02","section07.holidays.03"]},
+      {"list":true,"keys":["section07.benefits.01","section07.benefits.02","section07.benefits.03","section07.benefits.04","section07.benefits.05","section07.benefits.06"]},
+      {"list":false,"keys":["section09.left.body01","section09.left.body02","section09.left.body03","section09.left.body04","section09.left.body05","section09.left.body06"]},
+      {"list":false,"keys":["section09.right.body01","section09.right.body02","section09.right.body03","section09.right.body04","section09.right.body05","section09.right.body06"]},
+      {"list":true,"keys":["section10.card01.item01","section10.card01.item02","section10.card01.item03","section10.card01.item04","section10.card01.item05","section10.card01.item06"]},
+      {"list":true,"keys":["section10.card02.item01","section10.card02.item02"]},
+      {"list":false,"keys":["section11.title.line01","section11.title.line02"]},
+      {"list":false,"keys":["section11.point01.body01","section11.point01.body02","section11.point01.body03","section11.point01.body04","section11.point01.body05","section11.point01.body06"]},
+      {"list":false,"keys":["section11.point02.body01","section11.point02.body02","section11.point02.body03","section11.point02.body04","section11.point02.body05","section11.point02.body06","section11.point02.body07","section11.point02.body08"]},
+      {"list":false,"keys":["section11.point03.body01","section11.point03.body02","section11.point03.body03","section11.point03.body04","section11.point03.body05","section11.point03.body06","section11.point03.body07"]},
+      {"list":false,"keys":["section11.point04.body01","section11.point04.body02","section11.point04.body03","section11.point04.body04","section11.point04.body05","section11.point04.body06","section11.point04.body07","section11.point04.body08"]},
+      {"list":false,"keys":["section12.body01","section12.body02","section12.body03","section12.body04","section12.body05"]}
+    ],
     keys: [
     "section01.label", "section01.lead", "section01.title.line01", "section01.title.line02",
     "section01.title.line03", "section01.title.line04", "section01.body.line01", "section01.body.line02",
@@ -620,7 +660,91 @@
            '&' + COL_LABEL + '=eq.' + encodeURIComponent(row[COL_LABEL]);
   }
 
+  /* ===== 複数行を1つの文章として扱う ===== */
+  function splitLines(text, n) {
+    var lines = String(text).replace(/\r\n?/g, '\n').split('\n');
+    while (lines.length > n && lines[lines.length - 1] === '') lines.pop();
+    // 行数を超えた分は最後の行に改行付きでまとめる（ページ側で<br>として表示される）
+    if (lines.length > n) lines = lines.slice(0, n - 1).concat([lines.slice(n - 1).join('\n')]);
+    while (lines.length < n) lines.push('');
+    return lines;
+  }
+  function joinLines(members) {
+    var lines = members.map(function (m) { return valueText(m[COL_VALUE]); });
+    while (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+    return lines.join('\n');
+  }
+
+  function makeGroupRow(members, meta) {
+    var first = members[0], last = members[members.length - 1];
+    var fl = valueText(first[COL_LABEL]), ll = valueText(last[COL_LABEL]);
+    var g = {
+      __group: members,
+      __list: !!meta.list,
+      __firstKey: first[COL_KEY],
+      __lastKey: last[COL_KEY]
+    };
+    g[COL_SECTION] = first[COL_SECTION];
+    g[COL_LABEL] = fl === ll ? fl : fl + ' 〜 ' + ll;
+    g[COL_VALUE] = joinLines(members);
+    if (COL_STYLE in first) g[COL_STYLE] = first[COL_STYLE];
+    return g;
+  }
+
+  // ページ順に並んだ行を、文章のまとまりごとにまとめる
+  function groupRows(rows) {
+    var out = [], used = new Set();
+    rows.forEach(function (r) {
+      if (used.has(r)) return;
+      var meta = pageOrder.groupOf[valueText(r[COL_KEY])];
+      if (meta) {
+        var members = meta.keys.map(function (k) {
+          return rows.find(function (x) { return valueText(x[COL_KEY]) === k; });
+        }).filter(Boolean);
+        var ok = members.length > 1 && members.every(function (m) {
+          var v = valueText(m[COL_VALUE]);
+          return !used.has(m) && !isImageValue(v) && !/\n|<br\s*\/?>/i.test(v);
+        });
+        if (ok) {
+          members.forEach(function (m) { used.add(m); });
+          out.push(makeGroupRow(members, meta));
+          return;
+        }
+      }
+      used.add(r);
+      out.push(r);
+    });
+    return out;
+  }
+
+  async function patchGroup(g, payload) {
+    var members = g.__group;
+    var jobs = [];
+    if (COL_VALUE in payload) {
+      var lines = splitLines(payload[COL_VALUE], members.length);
+      members.forEach(function (m, i) {
+        if (valueText(m[COL_VALUE]) === lines[i]) return;
+        var p = {}; p[COL_VALUE] = lines[i];
+        jobs.push(patchRow(m, p).then(function (u) { m[COL_VALUE] = u[COL_VALUE]; }));
+      });
+    }
+    if (COL_STYLE in payload) {
+      members.forEach(function (m) {
+        var p = {}; p[COL_STYLE] = payload[COL_STYLE];
+        jobs.push(patchRow(m, p).then(function (u) { m[COL_STYLE] = u[COL_STYLE]; }));
+      });
+    }
+    var results = await Promise.allSettled(jobs);
+    var failed = results.filter(function (r) { return r.status === 'rejected'; });
+    if (failed.length) throw failed[0].reason;
+    var updated = {};
+    updated[COL_VALUE] = joinLines(members);
+    if (COL_STYLE in members[0]) updated[COL_STYLE] = members[0][COL_STYLE];
+    return updated;
+  }
+
   async function patchRow(row, payload) {
+    if (row.__group) return patchGroup(row, payload);
     var res = await fetch(endpoint(rowFilter(row)), {
       method: 'PATCH',
       headers: headers({ 'Content-Type': 'application/json', 'Prefer': 'return=representation' }),
@@ -636,12 +760,33 @@
   }
 
   /* ===== ページ（index.html）の順番 ===== */
-  var pageOrder = buildPageOrder(PAGE_DEFAULT.keys, PAGE_DEFAULT.titles, false);
+  var pageOrder = buildPageOrder(PAGE_DEFAULT.keys, PAGE_DEFAULT.titles, PAGE_DEFAULT.groups, false);
 
-  function buildPageOrder(keys, titles, live) {
+  function buildPageOrder(keys, titles, groups, live) {
     var index = Object.create(null);
     keys.forEach(function (k, i) { if (!(k in index)) index[k] = i; });
-    return { index: index, titles: titles || {}, live: live };
+    var groupOf = Object.create(null);
+    (groups || []).forEach(function (g) {
+      g.keys.forEach(function (k) { groupOf[k] = g; });
+    });
+    return { index: index, titles: titles || {}, groupOf: groupOf, live: live };
+  }
+
+  // 同じ親要素の直下で、末尾の番号だけが違うキーが続く場合に1つの文章とみなす
+  function detectGroups(doc) {
+    var groups = [], cur = null, prev = null;
+    doc.querySelectorAll('[data-content-key]').forEach(function (e) {
+      var k = e.getAttribute('data-content-key');
+      var stem = k.replace(/\d+$/, '');
+      if (stem !== k && cur && prev && prev.parentElement === e.parentElement && cur.stem === stem) {
+        cur.keys.push(k);
+      } else {
+        cur = stem !== k ? { stem: stem, keys: [k], list: e.tagName === 'LI' } : null;
+        if (cur) groups.push(cur);
+      }
+      prev = e;
+    });
+    return groups.filter(function (g) { return g.keys.length > 1; });
   }
 
   // index.html を読み込み、data-content-key の出現順とセクション見出しを取得する
@@ -663,7 +808,7 @@
                 sec.querySelector('h1, h2');
         if (h) titles['section' + m[1]] = h.textContent.replace(/\s+/g, '');
       });
-      pageOrder = buildPageOrder(keys, titles, true);
+      pageOrder = buildPageOrder(keys, titles, detectGroups(doc), true);
     } catch (e) {
       // 読めない場合（ローカルで開いている等）は埋め込みの順番を使う
     }
@@ -727,6 +872,7 @@
     return IMG_EXT_RE.test(v) || v.indexOf('/storage/v1/object/public/') !== -1;
   }
   function isImageRow(row) {
+    if (row.__group) return false;
     var v = valueText(row[COL_VALUE]);
     if (v) return isImageValue(v);
     return IMG_LABEL_RE.test(valueText(row[COL_LABEL]));
@@ -913,7 +1059,11 @@
 
     var labelEl = el('div', 'label');
     labelEl.appendChild(el('span', null, labelStr));
-    if (row[COL_KEY]) labelEl.appendChild(el('span', 'key', valueText(row[COL_KEY])));
+    if (row.__group) {
+      labelEl.appendChild(el('span', 'key', valueText(row.__firstKey) + ' 〜 ' + valueText(row.__lastKey).split('.').pop()));
+    } else if (row[COL_KEY]) {
+      labelEl.appendChild(el('span', 'key', valueText(row[COL_KEY])));
+    }
     var tagsEl = el('div', 'tags');
     labelEl.appendChild(tagsEl);
 
@@ -931,6 +1081,7 @@
 
     function showTags() {
       tagsEl.textContent = '';
+      if (row.__group) tagsEl.appendChild(el('span', 'tag', row.__list ? row.__group.length + '項目の箇条書き' : row.__group.length + '行の文章'));
       if (isImageRow(row)) tagsEl.appendChild(el('span', 'tag', '画像'));
       if (COL_KEY in row && keyPos(row[COL_KEY]) === null) tagsEl.appendChild(el('span', 'tag warn', 'ページ未使用'));
       if (features.style && !isDefaultStyle(getStyle(row))) tagsEl.appendChild(el('span', 'tag', '位置調整あり'));
@@ -979,6 +1130,7 @@
         (m === 'text' ? ta : fileInput).focus();
       }, '内容の種類');
       valueEl.appendChild(seg);
+      if (row.__group) seg.hidden = true;
 
       // テキスト
       var textPane = el('div');
@@ -986,6 +1138,30 @@
       ta.value = mode === 'text' ? current : '';
       ta.setAttribute('aria-label', labelStr + 'の値');
       textPane.appendChild(ta);
+      if (row.__group) {
+        var maxLines = row.__group.length;
+        ta.rows = Math.min(Math.max(maxLines + 1, 4), 12);
+        var help = el('p', 'line-help');
+        help.id = 'lh-' + Math.random().toString(36).slice(2, 8);
+        ta.setAttribute('aria-describedby', help.id);
+        var updateHelp = function () {
+          var n = ta.value.replace(/\r\n?/g, '\n').replace(/\n+$/, '').split('\n').length;
+          var base = row.__list
+            ? '1行が箇条書きの1項目になります（' + maxLines + '項目まで）。'
+            : '改行した位置が、ページ上の改行になります（' + maxLines + '行まで）。';
+          help.textContent = base + '現在 ' + n + ' 行。';
+          if (n > maxLines) {
+            var unit = row.__list ? '項目目' : '行目';
+            help.textContent += (maxLines + 1) + unit + '以降は、' + maxLines + unit + 'の中で改行して表示されます。';
+            help.classList.add('over');
+          } else {
+            help.classList.remove('over');
+          }
+        };
+        ta.addEventListener('input', updateHelp);
+        updateHelp();
+        textPane.appendChild(help);
+      }
 
       // 画像
       var imgPane = el('div', 'img-editor');
@@ -1453,7 +1629,7 @@
         setStatus('このセクションにはデータがありません。');
         return;
       }
-      rows = sortRowsByPage(rows);
+      rows = groupRows(sortRowsByPage(rows));
       features.order = MANUAL_ORDER && COL_ORDER in rows[0];
       features.style = COL_STYLE in rows[0];
       listEl.classList.toggle('can-reorder', features.order && rows.length > 1);
