@@ -19,6 +19,219 @@
   <link rel="stylesheet" href="./css/sections/section-10.css">
   <link rel="stylesheet" href="./css/sections/section-11.css">
   <link rel="stylesheet" href="./css/sections/section-12.css">
+  <!-- SECTION 09 用スタイル（写真の下にメッセージ）。css/sections/section-09.css より後に読み込み、こちらを優先します -->
+  <style>
+  /* 古い section-09.css の斜め切り抜き・重ね配置などを打ち消すリセット */
+  .message-section::before,
+  .message-section::after,
+  .message-section__inner::before,
+  .message-section__inner::after { content: none; background: none; }
+  .message-section :where(.message-list, .message-card, .message-card__copy, .message-card__body, .message-card__body p, .message-card__body span, .message-card__heading, .message-card__photo, .message-card__photo img) {
+    position: static;
+    inset: auto;
+    transform: none;
+    clip-path: none;
+    writing-mode: horizontal-tb;
+    float: none;
+    height: auto;
+    max-height: none;
+    opacity: 1;
+    visibility: visible;
+  }
+
+/* =========================================================
+   SECTION 09 代表・専務メッセージ
+   上：代表 / 下：専務（どちらも顔写真の下にメッセージ）
+   ・背景は画像を使わず、グラデーション＋ドット模様のみ
+   ・文章エリアは斜めの切り抜きをせず、文字が途切れないようにする
+   ========================================================= */
+
+.message-section {
+  --msg-blue: #0b5cc9;
+  --msg-blue-dark: #0a47a8;
+  --msg-blue-pale: #e8f2fc;
+  --msg-label: #3a8ee6;
+  --msg-text: #1a2a44;
+
+  position: relative;
+  padding: 72px 24px 88px;
+  color: var(--msg-text);
+  background:
+    radial-gradient(circle, rgba(11, 92, 201, 0.08) 1px, transparent 1.5px) 0 0 / 16px 16px,
+    linear-gradient(135deg, #f4f9ff 0%, #e3effb 100%);
+  overflow: hidden;
+}
+
+.message-section *,
+.message-section *::before,
+.message-section *::after {
+  box-sizing: border-box;
+}
+
+.message-section__inner {
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+/* ---------- 見出し ---------- */
+.message-section__label {
+  margin: 0 0 6px;
+  color: var(--msg-label);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.message-section__title {
+  display: inline-block;
+  margin: 0 0 40px;
+  padding: 10px 48px 10px 18px;
+  background: var(--msg-blue);
+  color: #fff;
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 800;
+  line-height: 1.4;
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%);
+}
+
+/* ---------- メッセージ（縦に2つ並べる） ---------- */
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.message-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 32px;
+  justify-items: center;
+  margin: 0;
+  padding: 48px;
+  border-radius: 12px;
+}
+
+/* 代表：青背景 */
+.message-card--president {
+  background: linear-gradient(135deg, var(--msg-blue) 0%, var(--msg-blue-dark) 100%);
+  color: #fff;
+}
+
+/* 専務：白背景 */
+.message-card--executive {
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(11, 71, 168, 0.1);
+}
+
+.message-card__copy {
+  width: 100%;
+  max-width: 640px;
+  min-width: 0; /* 文字のはみ出し防止 */
+}
+
+.message-card__role {
+  display: inline-block;
+  margin: 0 0 20px;
+  padding: 6px 30px 6px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+}
+.message-card--president .message-card__role {
+  background: #fff;
+  color: var(--msg-blue);
+}
+.message-card--executive .message-card__role {
+  background: var(--msg-blue);
+  color: #fff;
+}
+
+.message-card__heading {
+  margin: 0 0 24px;
+  font-size: clamp(24px, 3.2vw, 36px);
+  font-weight: 800;
+  line-height: 1.45;
+  line-break: strict;
+  word-break: auto-phrase;
+  overflow-wrap: anywhere;
+}
+.message-card--executive .message-card__heading {
+  color: var(--msg-blue);
+}
+
+.message-card__body p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 2;
+  line-break: strict;
+  overflow-wrap: anywhere;
+}
+.message-card__body p + p {
+  margin-top: 0.8em;
+}
+
+/* ---------- 顔写真（常にメッセージの上） ---------- */
+.message-card__photo {
+  order: -1;
+  width: 100%;
+  max-width: 320px;
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--msg-blue-pale);
+}
+.message-card--president .message-card__photo {
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.18);
+}
+.message-card__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+/* ---------- 締めの一文 ---------- */
+.message-section__closing {
+  margin: 48px 0 0;
+  color: var(--msg-blue);
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 800;
+  text-align: center;
+}
+
+/* ---------- タブレット ---------- */
+@media (max-width: 960px) {
+  .message-card {
+    padding: 36px;
+  }
+}
+
+/* ---------- スマホ：写真 → 文章の順に縦並び ---------- */
+@media (max-width: 700px) {
+  .message-section {
+    padding: 48px 16px 64px;
+  }
+  .message-list {
+    gap: 28px;
+  }
+  .message-card {
+    gap: 24px;
+    padding: 28px 20px;
+  }
+  .message-card__photo {
+    max-width: 240px;
+  }
+  .message-card__heading {
+    font-size: clamp(19px, 5.4vw, 24px);
+  }
+  .message-card__body p {
+    font-size: 14px;
+  }
+}
+  </style>
 </head>
 <body>
 <main class="lp">
@@ -918,7 +1131,6 @@
         <figure class="faq-honest__hero-photo">
           <img src="./assets/section-11/photos/hero-team.webp" width="1500" height="760" alt="笑顔で話す設備技研の若手社員3人">
         </figure>
-        <p class="faq-honest__hero-script" aria-hidden="true">一緒に、いい仕事を<br>つくっていこう。</p>
       </div>
 
       <div class="honest-points">
@@ -1048,7 +1260,6 @@
           </div>
         </div>
         <figure class="entry-section__photo"><img src="./assets/section-12/photos/entry-staff.webp" width="1000" height="1200" alt="笑顔で空を見上げる女性社員"></figure>
-        <p class="entry-section__script" aria-hidden="true">あなたの<br>一歩を応援します！</p>
         <div class="entry-contacts">
           <a class="entry-contact" href="tel:0989341313"><img src="./assets/section-12/icons/phone.png" width="512" height="512" alt=""><span><strong>098-934-1313</strong><small>営業時間 8:00〜17:00<br>定休日: 土・日・祝</small></span></a>
           <a class="entry-contact" href="mailto:soumu@setsuhi-giken.co.jp"><img src="./assets/section-12/icons/mail.png" width="512" height="512" alt=""><span><strong>soumu@setsuhi-giken.co.jp</strong></span></a>
