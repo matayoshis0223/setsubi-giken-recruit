@@ -273,6 +273,27 @@
     text-wrap: pretty;
   }
 
+  /* 各セクションの「見出し内の span を1行ずつ表示する」指定が、文節の span にまで
+     効いてしまわないよう、文節は必ず横に並べます */
+  :is(h1, h2, h3, p, div) span.jp-phrase {
+    display: inline-block !important;
+    width: auto !important;
+  }
+
+  /* ---------- SECTION 02：見出しを「〜まれば、」で改行し2行に収める ----------
+     1行目「ひとつでも当てはまれば、」／2行目「まず話を聞きに来てください。」
+     各行は途中で折り返さず、画面幅に合わせて文字サイズを調整します */
+  .fit-section__title {
+    font-size: clamp(20px, 5.4vw, 56px);
+    line-height: 1.4;
+    word-break: normal;
+    text-wrap: wrap;
+  }
+  .fit-section__title > span {
+    display: block;
+    white-space: nowrap;
+  }
+
   /* ---------- SECTION 12：大見出しのサイズ調整 ----------
      「話を聞いてみる」（7文字）が1行に収まる大きさに抑え、
      右側の写真と重ならないようにします */
@@ -378,7 +399,7 @@
     <div class="fit-section__dots" aria-hidden="true"></div>
     <div class="fit-section__inner">
       <p class="fit-section__label" data-content-key="section02.label">SECTION 02</p>
-      <h2 class="fit-section__title" id="section-02-title">
+      <h2 class="fit-section__title" id="section-02-title" data-no-phrase>
         <span data-content-key="section02.title.line01">ひとつでも当てはまれば、</span>
         <span data-content-key="section02.title.line02">まず話を聞きに来てください。</span>
       </h2>
@@ -1451,6 +1472,7 @@
     }
 
     function wrapElement(el) {
+      if (el.closest('[data-no-phrase]')) return;   // 改行位置を手動で決めている見出しは対象外
       if (el.querySelector('.jp-phrase')) return; // 処理済み
       var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
       var nodes = [];
